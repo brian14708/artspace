@@ -1,3 +1,4 @@
 fn main() {
-  tauri_build::build()
+    std::fs::create_dir_all("../build").unwrap();
+    tauri_build::build()
 }
