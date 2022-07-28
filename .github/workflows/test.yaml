@@ -9,12 +9,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.platform }}
+  test-linux:
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -31,7 +27,6 @@ jobs:
           run_install: true
 
       - run: pnpm run lint
-        if: matrix.platform == 'ubuntu-latest'
         working-directory: ./ui
 
       - name: Rust setup
@@ -42,22 +37,19 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Install webkit2gtk (ubuntu only)
-        if: matrix.platform == 'ubuntu-latest'
+      - name: Install webkit2gtk
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
-        if: matrix.platform == 'ubuntu-latest'
         with:
           command: fmt
           args: --all -- --check
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
-        if: matrix.platform == 'ubuntu-latest'
         with:
           command: clippy
           args: --no-deps --release
@@ -72,3 +64,99 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: app-linux
+          path: target/release/bundle/appimage/*.AppImage
+          retention-days: 7
+
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Node.js setup
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        with:
+          version: 7
+          run_install: true
+
+      - name: Rust setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+
+      - name: Build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: app-macos
+          path: target/release/bundle/dmg/*.dmg
+          retention-days: 7
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Node.js setup
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        with:
+          version: 7
+          run_install: true
+
+      - name: Rust setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+
+      - name: Build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: app-windows
+          path: target/release/bundle/msi/*.msi
+          retention-days: 7
