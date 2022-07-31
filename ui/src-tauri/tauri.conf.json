@@ -19,7 +19,10 @@
       "category": "DeveloperTool",
       "copyright": "",
       "deb": {
-        "depends": []
+        "depends": [],
+        "files": {
+          "usr/lib/libonnxruntime.so.1.12.0": "../../vendor/lib/libonnxruntime.so.1.12.0"
+        }
       },
       "externalBin": [],
       "icon": [

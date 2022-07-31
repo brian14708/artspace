@@ -5,7 +5,7 @@
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}!", name)
+    format!("Hello, {} with {}!", name, artspace_core::version(),)
 }
 
 fn main() {
