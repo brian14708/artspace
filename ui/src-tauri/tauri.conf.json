@@ -18,12 +18,6 @@
       "active": true,
       "category": "DeveloperTool",
       "copyright": "",
-      "deb": {
-        "depends": [],
-        "files": {
-          "usr/lib/libonnxruntime.so.1.12.0": "../../vendor/lib/libonnxruntime.so.1.12.0"
-        }
-      },
       "externalBin": [],
       "icon": [
         "icons/32x32.png",
@@ -43,8 +37,11 @@
       },
       "resources": [],
       "shortDescription": "",
-      "targets": "all",
+      "targets": ["appimage", "msi", "app", "updater"],
       "windows": {
+        "webviewInstallMode": {
+          "type": "embedBootstrapper"
+        },
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
         "timestampUrl": ""

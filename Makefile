@@ -1,7 +1,9 @@
-.PHONY: prepare build dev lint fix env
+.PHONY: prepare build dev lint fix env macos-post-bundle
 
 ifeq ($(OS),Windows_NT) 
 export PATH := $(shell pwd)/vendor/lib:${PATH}
+else ifeq ($(shell uname -s),Darwin)
+export DYLD_LIBRARY_PATH := $(shell pwd)/vendor/lib:${DYLD_LIBRARY_PATH}
 else
 export LD_LIBRARY_PATH := $(shell pwd)/vendor/lib:${LD_LIBRARY_PATH}
 endif
@@ -37,6 +39,8 @@ fix: prepare
 env: prepare
 ifeq ($(OS),Windows_NT) 
 	@echo "PATH=${PATH}"
+else ifeq ($(shell uname -s),Darwin)
+	@echo "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}"
 else
 	@echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 endif
@@ -44,9 +48,25 @@ endif
 vendor/.prepare: scripts/prepare.py
 	@python3 scripts/prepare.py
 	@pnpm i
-ifdef CI
 ifeq ($(OS),Windows_NT) 
+ifdef CI
 	@mkdir -p target/release
 	@cp vendor/lib/*.dll ./target/release/
 endif
+else ifeq ($(shell uname -s),Darwin)
+ifndef CI
+	@mkdir -p .cargo
+	@echo "[target.'cfg(target_os = \"macos\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/lib,-rpath,@executable_path/../lib\"]" > .cargo/config.toml
+endif
+endif
+
+macos-post-bundle:
+ifdef RELEASE
+	mkdir -p target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/lib/
+	cp ./vendor/lib/libonnxruntime.1.12.0.dylib target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/lib/
+	install_name_tool target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.0.dylib @executable_path/../lib/libonnxruntime.1.12.0.dylib
+else
+	mkdir -p target/release/bundle/macos/artspace.app/Contents/lib/
+	cp ./vendor/lib/libonnxruntime.1.12.0.dylib target/release/bundle/macos/artspace.app/Contents/lib/
+	install_name_tool target/release/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.0.dylib @executable_path/../lib/libonnxruntime.1.12.0.dylib
 endif
