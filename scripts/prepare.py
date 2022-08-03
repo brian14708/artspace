@@ -5,6 +5,7 @@ import zipfile
 import tempfile
 import shutil
 import os
+import sys
 import json
 import subprocess
 import urllib.request
@@ -59,12 +60,15 @@ def download_and_extract(url, dst):
             extract_tgz(f, dst)
 
 
-def onnxruntime_download_url(target=None, version="1.12.0"):
-    if target is None:
-        rustc = subprocess.check_output(["rustc", "-V", "-v"]).decode("utf-8")
-        for l in rustc.splitlines():
-            if l.startswith("host"):
-                target = l.split()[-1]
+def host_target():
+    rustc = subprocess.check_output(["rustc", "-V", "-v"]).decode("utf-8")
+    for l in rustc.splitlines():
+        if l.startswith("host"):
+            return l.split()[-1]
+    assert False, "cannot determine host target"
+
+
+def onnxruntime_download_url(target, version="1.12.0"):
     assert target != None
     target = target.split("-")
     os = target[2]
@@ -89,7 +93,13 @@ def onnxruntime_download_url(target=None, version="1.12.0"):
 
 if __name__ == "__main__":
     basedir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "vendor")
-    url = onnxruntime_download_url()
+    target = host_target()
+    if len(sys.argv) > 1:
+        target = os.path.normpath(sys.argv[1])
+        if target.endswith(".prepare"):
+            target = target.split(os.sep)[-2]
+    basedir = os.path.join(basedir, target)
+    url = onnxruntime_download_url(target=target)
 
     cachepath = os.path.join(basedir, ".prepare")
     cache = {}

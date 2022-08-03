@@ -3,7 +3,8 @@ use std::{env, path::PathBuf};
 fn main() {
     let install_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
         .join("..")
-        .join("vendor");
+        .join("vendor")
+        .join(env::var("TARGET").unwrap());
 
     let include_dir = install_dir.join("include");
     let lib_dir = install_dir.join("lib");

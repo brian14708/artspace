@@ -55,7 +55,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           name: app-linux
-          path: target/release/bundle/appimage/*.AppImage
+          path: "${{ env.BUILD_OUT_DIR }}/bundle/appimage/*.AppImage"
           retention-days: 7
 
   test-macos:
@@ -95,8 +95,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - run: |
-          make macos-post-bundle
-          tar -cvf app-macos.tar -C target/release/bundle/macos artspace.app
+          make post-build-macos
+          tar -cvf app-macos.tar -C ${BUILD_OUT_DIR}/bundle/macos artspace.app
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -134,9 +134,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
-          md target/release/deps -ea 0
-          cp ./vendor/lib/*.dll target/release
-          cp ./vendor/lib/*.dll target/release/deps
+          make pre-build-windows
 
       - run: make test
 
@@ -150,5 +148,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           name: app-windows
-          path: target/release/bundle/msi/*.msi
+          path: "target/release/bundle/msi/*.msi"
           retention-days: 7

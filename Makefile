@@ -1,67 +1,121 @@
-.PHONY: prepare build dev lint fix env macos-post-bundle
-
-ifeq ($(OS),Windows_NT) 
-export PATH := $(shell pwd)/vendor/lib;${PATH}
-else ifeq ($(shell uname -s),Darwin)
-export DYLD_LIBRARY_PATH := $(shell pwd)/vendor/lib:${DYLD_LIBRARY_PATH}
-else
-export LD_LIBRARY_PATH := $(shell pwd)/vendor/lib:${LD_LIBRARY_PATH}
-endif
+.PHONY: prepare build dev lint fix env \
+	pre-build-macos post-build-macos \
+	pre-build-linux post-build-linux \
+	pre-build-windows post-build-windows
 
 ifdef CI
-	CARGO_ARG := --release
-else
-	CARGO_ARG :=
+RELEASE := 1
 endif
 
-prepare: vendor/.prepare
+VERBOSE ?= @
+CARGO_ARGS :=
+TAURI_ARGS :=
+HOST_TARGET := $(shell rustc -vV | awk '/host/ { print $$2 }')
+ifdef RELEASE
+CARGO_ARGS += --release
+endif
+ifdef TARGET
+CARGO_ARGS += --target "$(TARGET)"
+TAURI_ARGS += --target "$(TARGET)"
+else
+TARGET := $(HOST_TARGET)
+endif
+
+ifeq ($(HOST_TARGET),$(TARGET))
+ifdef RELEASE
+OUT_DIR := target/release
+else
+OUT_DIR := target/debug
+endif
+else
+ifdef RELEASE
+OUT_DIR := target/$(TARGET)/release
+else
+OUT_DIR := target/$(TARGET)/debug
+endif
+endif
+
+# set env for running with vendored library
+ifeq ($(OS),Windows_NT) 
+export PATH := $(shell pwd)/vendor/$(TARGET)/lib;${PATH}
+else ifeq ($(shell uname -s),Darwin)
+export DYLD_LIBRARY_PATH := $(shell pwd)/vendor/$(TARGET)/lib:${DYLD_LIBRARY_PATH}
+else
+export LD_LIBRARY_PATH := $(shell pwd)/vendor/$(TARGET)/lib:${LD_LIBRARY_PATH}
+endif
+
+ifeq ($(OS),Windows_NT)
+TARGET_OS=windows
+else
+ifeq ($(shell uname -s),Darwin)
+TARGET_OS=macos
+else
+TARGET_OS=linux
+endif
+endif
+
+
+prepare: vendor/$(TARGET)/.prepare
+ifdef CI
+	$(VERBOSE)rm -f .cargo/config.toml
+else
+	$(VERBOSE)mkdir -p .cargo
+	$(VERBOSE)echo "[target.'cfg(target_os = \"macos\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib,-rpath,@executable_path/../lib\"]\n" > .cargo/config.toml
+	$(VERBOSE)echo "[target.'cfg(target_os = \"linux\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib\"]\n" >> .cargo/config.toml
+endif
 
 build: prepare
-	@pnpm recursive --filter ui exec tauri build
+	$(VERBOSE)$(MAKE) pre-build-$(TARGET_OS)
+	$(VERBOSE)pnpm recursive --filter ui exec tauri build $(TAURI_ARGS)
+	$(VERBOSE)$(MAKE) post-build-$(TARGET_OS)
 
 dev: prepare
-	@pnpm recursive --filter ui exec tauri dev
+	$(VERBOSE)pnpm recursive --filter ui exec tauri dev $(TAURI_ARGS)
 
 test: prepare
-	@cargo test ${CARGO_ARG}
+	$(VERBOSE)cargo test $(CARGO_ARGS)
+
+cli: prepare
+	$(VERBOSE)cargo run $(CARGO_ARGS) -p artspace-cli -- $(ARGS)
 
 lint: prepare
-	@pnpm recursive run check
-	@pnpm recursive run lint
-	@cargo fmt --all -- --check
-	@cargo clippy ${CARGO_ARG}
+	$(VERBOSE)pnpm recursive run check
+	$(VERBOSE)pnpm recursive run lint
+	$(VERBOSE)cargo fmt --all -- --check
+	$(VERBOSE)cargo clippy $(CARGO_ARGS)
 
 fix: prepare
-	@pnpm recursive run format
-	@cargo fmt
-	@cargo clippy --fix
+	$(VERBOSE)pnpm recursive run format
+	$(VERBOSE)cargo fmt --all
+	$(VERBOSE)cargo clippy --fix $(CARGO_ARGS)
 
 env: prepare
-ifeq ($(OS),Windows_NT) 
-	@echo "PATH=${PATH}"
-else ifeq ($(shell uname -s),Darwin)
-	@echo "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}"
-else
-	@echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+	$(VERBOSE)echo "BUILD_TARGET=$(TARGET)"
+	$(VERBOSE)echo "BUILD_OUT_DIR=$(OUT_DIR)"
+ifeq ($(TARGET_OS),linux)
+	$(VERBOSE)echo "LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)"
 endif
 
-vendor/.prepare: scripts/prepare.py
-	@python3 scripts/prepare.py
-	@pnpm i
-ifndef CI
-ifeq ($(shell uname -s),Darwin)
-	@mkdir -p .cargo
-	@echo "[target.'cfg(target_os = \"macos\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/lib,-rpath,@executable_path/../lib\"]" > .cargo/config.toml
-endif
-endif
+vendor/universal-apple-darwin/.prepare: vendor/aarch64-apple-darwin/.prepare
+	$(VERBOSE)$(MAKE) vendor/x86_64-apple-darwin/.prepare
+	$(VERBOSE)ln -s x86_64-apple-darwin vendor/universal-apple-darwin
+	$(VERBOSE)touch $@
 
-macos-post-bundle:
-ifdef RELEASE
-	mkdir -p target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/lib/
-	cp ./vendor/lib/libonnxruntime.1.12.0.dylib target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/lib/
-	install_name_tool target/universal-apple-darwin/release/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.0.dylib @executable_path/../lib/libonnxruntime.1.12.0.dylib
-else
-	mkdir -p target/release/bundle/macos/artspace.app/Contents/lib/
-	cp ./vendor/lib/libonnxruntime.1.12.0.dylib target/release/bundle/macos/artspace.app/Contents/lib/
-	install_name_tool target/release/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.0.dylib @executable_path/../lib/libonnxruntime.1.12.0.dylib
-endif
+vendor/%/.prepare: scripts/prepare.py
+	$(VERBOSE)python3 scripts/prepare.py $@
+	$(VERBOSE)pnpm i
+
+pre-build-windows:
+	$(VERBOSE)mkdir -p $(OUT_DIR)/deps
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime.dll $(OUT_DIR)
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime.dll $(OUT_DIR)/deps
+post-build-windows:
+
+pre-build-macos:
+post-build-macos:
+	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime.1.12.0.dylib $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
+	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.0.dylib @executable_path/../lib/libonnxruntime.1.12.0.dylib
+
+pre-build-linux:
+post-build-linux:

@@ -65,6 +65,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "artspace-cli"
+version = "0.1.0"
+
+[[package]]
 name = "artspace-core"
 version = "0.1.0"
 dependencies = [

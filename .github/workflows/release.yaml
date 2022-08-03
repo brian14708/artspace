@@ -62,8 +62,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
-          md target/release -ea 0
-          cp ./vendor/lib/*.dll target/release
+          make pre-build-windows
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
@@ -136,8 +135,10 @@ jobs:
           target: aarch64-apple-darwin
 
       - run: |
-          make prepare
-          make env >> $GITHUB_ENV
+          make TARGET=universal-apple-darwin prepare
+          make TARGET=universal-apple-darwin env >> $GITHUB_ENV
+
+      - run: |
           mkdir -p target/release/bundle/macos
           touch target/release/bundle/macos/artspace.app.tar.gz
 
@@ -152,8 +153,8 @@ jobs:
         run: echo "PACKAGE_VERSION=$(node -p "require('./ui/package.json').version")" >> $GITHUB_ENV
 
       - run: |
-          make RELEASE=1 macos-post-bundle
-          mv target/universal-apple-darwin/release/bundle/macos/artspace.app .
+          make TARGET=universal-apple-darwin post-build-macos
+          mv ${BUILD_OUT_DIR}/bundle/macos/artspace.app .
           codesign -s - -f artspace.app
           zip -r artspace_${PACKAGE_VERSION}_macOS.zip artspace.app
 
