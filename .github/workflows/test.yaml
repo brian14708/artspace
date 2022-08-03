@@ -42,8 +42,8 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
-      - run: make test
       - run: make lint
+      - run: make test
 
       - name: Build
         uses: tauri-apps/tauri-action@v0
@@ -86,6 +86,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
+
       - run: make test
 
       - name: Build
@@ -133,6 +134,10 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
+          md target/release/deps -ea 0
+          cp ./vendor/lib/*.dll target/release
+          cp ./vendor/lib/*.dll target/release/deps
+
       - run: make test
 
       - name: Build

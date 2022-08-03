@@ -1,7 +1,7 @@
 .PHONY: prepare build dev lint fix env macos-post-bundle
 
 ifeq ($(OS),Windows_NT) 
-export PATH := $(shell pwd)/vendor/lib:${PATH}
+export PATH := $(shell pwd)/vendor/lib;${PATH}
 else ifeq ($(shell uname -s),Darwin)
 export DYLD_LIBRARY_PATH := $(shell pwd)/vendor/lib:${DYLD_LIBRARY_PATH}
 else
@@ -48,13 +48,8 @@ endif
 vendor/.prepare: scripts/prepare.py
 	@python3 scripts/prepare.py
 	@pnpm i
-ifeq ($(OS),Windows_NT) 
-ifdef CI
-	@mkdir -p target/release
-	@cp vendor/lib/*.dll ./target/release/
-endif
-else ifeq ($(shell uname -s),Darwin)
 ifndef CI
+ifeq ($(shell uname -s),Darwin)
 	@mkdir -p .cargo
 	@echo "[target.'cfg(target_os = \"macos\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/lib,-rpath,@executable_path/../lib\"]" > .cargo/config.toml
 endif

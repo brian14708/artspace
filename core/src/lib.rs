@@ -11,7 +11,10 @@ pub fn version() -> String {
     }
 }
 
-#[test]
-fn test_version() {
-    assert_ne!(version(), "");
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_version() {
+        assert_eq!(super::version(), "1.12.0");
+    }
 }
