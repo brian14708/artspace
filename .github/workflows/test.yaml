@@ -96,14 +96,15 @@ jobs:
 
       - run: |
           make post-build-macos
-          tar -cvf app-macos.tar -C ${BUILD_OUT_DIR}/bundle/macos artspace.app
+          mv ${BUILD_OUT_DIR}/bundle/macos/artspace.app .
+          zip -r app-macos.zip artspace.app
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:
           name: app-macos
-          path: app-macos.tar
+          path: app-macos.zip
           retention-days: 7
 
   test-windows:

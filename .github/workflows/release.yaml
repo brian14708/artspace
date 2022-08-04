@@ -155,12 +155,14 @@ jobs:
       - run: |
           make TARGET=universal-apple-darwin post-build-macos
           mv ${BUILD_OUT_DIR}/bundle/macos/artspace.app .
-          codesign -s - -f artspace.app
-          zip -r artspace_${PACKAGE_VERSION}_macOS.zip artspace.app
+          codesign -s - --deep -f artspace.app
+          pnpx create-dmg artspace.app  || true
+          mv *.dmg artspace_${PACKAGE_VERSION}_macOS.dmg
+          codesign -s - --deep -f artspace_${PACKAGE_VERSION}_macOS.dmg
 
       - uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: "artspace_${{ env.PACKAGE_VERSION }}_macOS.zip"
+          file: "artspace_${{ env.PACKAGE_VERSION }}_macOS.dmg"
           release_id: ${{ needs.create-release.outputs.release_id }}
