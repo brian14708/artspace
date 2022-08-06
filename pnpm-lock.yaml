@@ -8,7 +8,7 @@ importers:
   ui:
     specifiers:
       '@sveltejs/adapter-static': 1.0.0-next.39
-      '@sveltejs/kit': 1.0.0-next.403
+      '@sveltejs/kit': 1.0.0-next.405
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.32.0
@@ -30,7 +30,7 @@ importers:
       vite: 3.0.4
     devDependencies:
       '@sveltejs/adapter-static': 1.0.0-next.39
-      '@sveltejs/kit': 1.0.0-next.403_svelte@3.49.0+vite@3.0.4
+      '@sveltejs/kit': 1.0.0-next.405_svelte@3.49.0+vite@3.0.4
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.32.0_iosr3hrei2tubxveewluhu5lhy
@@ -138,8 +138,8 @@ packages:
     resolution: {integrity: sha512-EeD39H6iEe0UEKnKxLFTZFZpi/FcX5xfbAvsMQ+B09aDZccpQmkJBSIo+4kq1JsQGSjwi/+J3aE9bR67R6CIyQ==}
     dev: true
 
-  /@sveltejs/kit/1.0.0-next.403_svelte@3.49.0+vite@3.0.4:
-    resolution: {integrity: sha512-pKlmthl1SZkbx671Jp+LBoRne0vNzsjSgta9iRhqW/bt/0mx/IjlMd/NOeLuJGo30dAJdefrySoSamiaq47M/g==}
+  /@sveltejs/kit/1.0.0-next.405_svelte@3.49.0+vite@3.0.4:
+    resolution: {integrity: sha512-jHSa74F7k+hC+0fof75g/xm/+1M5sM66Qt6v8eLLMSgjkp36Lb5xOioBhbl6w0NYoE5xysLsBWuu+yHytfvCBA==}
     engines: {node: '>=16.9'}
     hasBin: true
     requiresBuild: true
@@ -151,6 +151,7 @@ packages:
       chokidar: 3.5.3
       sade: 1.8.1
       svelte: 3.49.0
+      tiny-glob: 0.2.9
       vite: 3.0.4
     transitivePeerDependencies:
       - diff-match-patch
@@ -1174,6 +1175,10 @@ packages:
       type-fest: 0.20.2
     dev: true
 
+  /globalyzer/0.1.0:
+    resolution: {integrity: sha512-40oNTM9UfG6aBmuKxk/giHn5nQ8RVz/SS4Ir6zgzOv9/qC3kKZ9v4etGTcJbEl/NyVQH7FGU7d+X1egr57Md2Q==}
+    dev: true
+
   /globby/11.1.0:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
@@ -1184,6 +1189,10 @@ packages:
       ignore: 5.2.0
       merge2: 1.4.1
       slash: 3.0.0
+    dev: true
+
+  /globrex/0.1.2:
+    resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
     dev: true
 
   /graceful-fs/4.2.10:
@@ -1889,6 +1898,13 @@ packages:
 
   /text-table/0.2.0:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
+    dev: true
+
+  /tiny-glob/0.2.9:
+    resolution: {integrity: sha512-g/55ssRPUjShh+xkfx9UPDXqhckHEsHr4Vd9zX55oSdGZc/MD0m3sferOkwWtp98bv+kcVfEHtRJgBVJzelrzg==}
+    dependencies:
+      globalyzer: 0.1.0
+      globrex: 0.1.2
     dev: true
 
   /to-regex-range/5.0.1:
