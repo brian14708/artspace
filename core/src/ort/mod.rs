@@ -2,8 +2,10 @@ use std::sync::atomic::{AtomicPtr, Ordering};
 
 use ort_sys as sys;
 
+mod cuda;
 mod env;
 mod session;
+pub use env::{list_providers, version};
 pub use session::Session;
 
 pub struct Error(sys::OrtErrorCode, String);

@@ -59,6 +59,24 @@ impl Session {
             })
             .unwrap();
         }
+        #[cfg(all(
+            target_arch = "x86_64",
+            any(target_os = "linux", target_os = "windows")
+        ))]
+        {
+            let mut cuda_options: *mut sys::OrtCUDAProviderOptionsV2 = std::ptr::null_mut();
+            if ort_call!(api.CreateCUDAProviderOptions, &mut cuda_options).is_ok() {
+                defer! {
+                    unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
+                }
+
+                ort_call!(
+                    api.SessionOptionsAppendExecutionProvider_CUDA_V2,
+                    session_options,
+                    cuda_options,
+                )?;
+            }
+        }
 
         struct OrtWeight {
             name: CString,

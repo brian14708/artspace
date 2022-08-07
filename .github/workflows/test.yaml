@@ -42,6 +42,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
+          make pre-build-linux
       - run: make lint
       - run: make test
 
@@ -86,6 +87,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
+          make pre-build-macos
 
       - run: make test
 

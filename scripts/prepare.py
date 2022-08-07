@@ -71,24 +71,26 @@ def host_target():
 def onnxruntime_download_url(target, version="1.12.1"):
     assert target != None
     target = target.split("-")
-    os = target[2]
+    os_name = target[2]
     arch = target[0]
 
     base = f"https://github.com/microsoft/onnxruntime/releases/download/v{version}"
+    if os.environ.get("GH_PROXY"):
+        base = f"https://ghproxy.com/{base}"
 
-    if os == "linux":
+    if os_name == "linux":
         if arch == "x86_64":
-            return f"{base}/onnxruntime-linux-x64-{version}.tgz"
+            return f"{base}/onnxruntime-linux-x64-gpu-{version}.tgz"
         elif arch == "aarch64":
             return f"{base}/onnxruntime-linux-aarch64-{version}.tgz"
-    elif os == "darwin":
+    elif os_name == "darwin":
         return f"{base}/onnxruntime-osx-universal2-{version}.tgz"
-    elif os == "windows":
+    elif os_name == "windows":
         if arch == "x86_64":
-            return f"{base}/onnxruntime-win-x64-{version}.zip"
+            return f"{base}/onnxruntime-win-x64-gpu-{version}.zip"
         elif arch == "aarch64":
             return f"{base}/onnxruntime-win-arm64-{version}.zip"
-    assert False, f"Unsupported OS/architecture combination: {os}/{arch}"
+    assert False, f"Unsupported OS/architecture combination: {os_name}/{arch}"
 
 
 if __name__ == "__main__":

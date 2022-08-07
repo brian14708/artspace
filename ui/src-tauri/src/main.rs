@@ -5,7 +5,12 @@
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {} with {}!", name, artspace_core::version(),)
+    format!(
+        "Hello, {}! ORT: {} {:?}",
+        name,
+        artspace_core::ort::version(),
+        artspace_core::ort::list_providers().unwrap(),
+    )
 }
 
 fn main() {

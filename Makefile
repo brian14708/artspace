@@ -54,7 +54,6 @@ TARGET_OS=linux
 endif
 endif
 
-
 prepare: vendor/$(TARGET)/.prepare
 ifdef CI
 	$(VERBOSE)rm -f .cargo/config.toml
@@ -65,9 +64,9 @@ else
 endif
 
 build: prepare
-	$(VERBOSE)$(MAKE) pre-build-$(TARGET_OS)
+	$(VERBOSE)$(MAKE) RELEASE=1 pre-build-$(TARGET_OS)
 	$(VERBOSE)pnpm recursive --filter ui exec tauri build $(TAURI_ARGS)
-	$(VERBOSE)$(MAKE) post-build-$(TARGET_OS)
+	$(VERBOSE)$(MAKE) RELEASE=1 post-build-$(TARGET_OS)
 
 dev: prepare
 	$(VERBOSE)pnpm recursive --filter ui exec tauri dev $(TAURI_ARGS)
@@ -107,8 +106,8 @@ vendor/%/.prepare: scripts/prepare.py
 
 pre-build-windows:
 	$(VERBOSE)mkdir -p $(OUT_DIR)/deps
-	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime.dll $(OUT_DIR)
-	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime.dll $(OUT_DIR)/deps
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)/deps
 post-build-windows:
 
 pre-build-macos:
@@ -118,4 +117,6 @@ post-build-macos:
 	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
 
 pre-build-linux:
+	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime_providers_*.so $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
 post-build-linux:

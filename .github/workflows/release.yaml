@@ -102,6 +102,7 @@ jobs:
       - run: |
           make prepare
           make env >> $GITHUB_ENV
+          make pre-build-linux
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
@@ -137,6 +138,7 @@ jobs:
       - run: |
           make TARGET=universal-apple-darwin prepare
           make TARGET=universal-apple-darwin env >> $GITHUB_ENV
+          make TARGET=universal-apple-darwin pre-build-macos
 
       - run: |
           mkdir -p target/release/bundle/macos

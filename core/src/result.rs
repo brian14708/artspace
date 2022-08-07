@@ -16,6 +16,8 @@ pub enum Error {
     Tokenizer(Box<dyn std::error::Error + Send + Sync>),
     #[error("invalid input: {0}")]
     InvalidInput(String),
+    #[error("unsupported: {0}")]
+    Unsupported(String),
     #[error("unsupported {0} model: {1}")]
     UnsupportedModel(String, String),
     #[error("unknown error")]
