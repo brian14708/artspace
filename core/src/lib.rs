@@ -25,6 +25,6 @@ pub fn version() -> String {
 mod tests {
     #[test]
     fn test_version() {
-        assert_eq!(super::version(), "1.12.0");
+        assert_eq!(super::version(), "1.12.1");
     }
 }
