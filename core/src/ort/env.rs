@@ -24,6 +24,10 @@ lazy_static! {
 }
 
 fn init() -> AtomicPtr<sys::OrtEnv> {
+    unsafe {
+        sys::cudaStubInit();
+    }
+
     #[cfg(target_os = "linux")]
     {
         const LD_LIBRARY_PATH: &str = "LD_LIBRARY_PATH";

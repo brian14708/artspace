@@ -2448,6 +2448,7 @@ name = "ort-sys"
 version = "0.1.0"
 dependencies = [
  "bindgen 0.60.1",
+ "cc",
  "flate2",
  "tar",
  "ureq",
