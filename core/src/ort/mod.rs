@@ -1,9 +1,10 @@
+use std::sync::atomic::{AtomicPtr, Ordering};
+
+use ort_sys as sys;
+
 mod env;
 mod session;
 pub use session::Session;
-
-use ort_sys as sys;
-use std::sync::atomic::{AtomicPtr, Ordering};
 
 pub struct Error(sys::OrtErrorCode, String);
 
@@ -21,31 +22,38 @@ impl std::fmt::Debug for Error {
 
 impl std::error::Error for Error {}
 
-macro_rules! ort_call {
-    ($api:expr, $( $args:expr ),* $(,)?) => {{
-        let status: *mut sys::OrtStatus = unsafe {
-            ($api).unwrap()($($args),*)
-        };
-        if status.is_null() {
+fn status(status: *mut sys::OrtStatus) -> Result<(), Error> {
+    if status.is_null() {
+        Ok(())
+    } else {
+        let api = crate::ort::get_api();
+        let code = unsafe { api.GetErrorCode.unwrap()(status) };
+        if code == sys::OrtErrorCode_ORT_OK {
+            unsafe {
+                api.ReleaseStatus.unwrap()(status);
+            }
             Ok(())
         } else {
-            let api = crate::ort::get_api();
-            let code = unsafe { api.GetErrorCode.unwrap()(status) };
-            if code == sys::OrtErrorCode_ORT_OK {
-                unsafe { api.ReleaseStatus.unwrap()(status); }
-                Ok(())
-            } else {
-                let msg = unsafe {
-                    std::ffi::CStr::from_ptr(api.GetErrorMessage.unwrap()(status))
-                }.to_string_lossy().into_owned();
-                unsafe { api.ReleaseStatus.unwrap()(status); }
-                Err(crate::ort::Error(code, msg))
+            let msg = unsafe { std::ffi::CStr::from_ptr(api.GetErrorMessage.unwrap()(status)) }
+                .to_string_lossy()
+                .into_owned();
+            unsafe {
+                api.ReleaseStatus.unwrap()(status);
             }
+            Err(crate::ort::Error(code, msg))
         }
+    }
+}
+
+macro_rules! ort_call {
+    ($api:expr, $( $args:expr ),* $(,)?) => {{
+        crate::ort::status(unsafe {
+            ($api).unwrap()($($args),*)
+        })
     }
     };
 }
-pub(crate) use ort_call;
+pub(self) use ort_call;
 
 lazy_static! {
     static ref G_ORT: AtomicPtr<sys::OrtApi> = {
@@ -59,6 +67,6 @@ lazy_static! {
     };
 }
 
-pub fn get_api() -> &'static sys::OrtApi {
+fn get_api() -> &'static sys::OrtApi {
     unsafe { &*G_ORT.load(Ordering::Relaxed) }
 }

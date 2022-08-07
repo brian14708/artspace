@@ -1,8 +1,9 @@
-use ort_sys as sys;
 use std::{
     ffi::CString,
     sync::atomic::{AtomicPtr, Ordering},
 };
+
+use ort_sys as sys;
 
 use crate::ort::{get_api, ort_call};
 

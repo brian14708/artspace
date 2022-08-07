@@ -1,7 +1,3 @@
-use ort_sys as sys;
-use rayon::prelude::*;
-use serde::Deserialize;
-use smallvec::SmallVec;
 use std::{
     collections::HashMap,
     ffi::{c_void, CStr, CString},
@@ -9,6 +5,12 @@ use std::{
     sync::Mutex,
 };
 
+use ort_sys as sys;
+use rayon::prelude::*;
+use serde::Deserialize;
+use smallvec::SmallVec;
+
+use super::ort_call;
 use crate::{
     ort::{
         env::{get_cpu_mem_info, get_env},
@@ -16,8 +18,6 @@ use crate::{
     },
     result::{Error, Result},
 };
-
-use super::ort_call;
 
 pub struct Session {
     session: *mut sys::OrtSession,
@@ -46,10 +46,19 @@ impl Session {
         ort_call!(
             api.AddSessionConfigEntry,
             session_options,
-            std::mem::transmute(sys::kOrtSessionOptionsConfigUseEnvAllocators),
+            sys::kOrtSessionOptionsConfigUseEnvAllocators as *const _ as *const i8,
             "1\0".as_ptr() as *const i8,
         )?;
         ort_call!(api.EnableMemPattern, session_options)?;
+
+        #[cfg(target_os = "macos")]
+        {
+            let coreml: u32 = 0;
+            super::status(unsafe {
+                sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
+            })
+            .unwrap();
+        }
 
         struct OrtWeight {
             name: CString,
@@ -60,9 +69,9 @@ impl Session {
 
         let ort_blobs: Mutex<Vec<OrtWeight>> = Mutex::new(Vec::new());
         defer! {
-            for o in ort_blobs.lock().unwrap().iter() {
+            ort_blobs.lock().unwrap().iter().for_each(|o| {
                 unsafe { api.ReleaseValue.unwrap()(o.ptr); }
-            }
+            });
         }
 
         load_blobs(t, &format!(".{}.json", path.as_ref()))?
@@ -94,15 +103,15 @@ impl Session {
                 Ok(())
             })?;
 
-        for o in ort_blobs.lock().unwrap().iter() {
+        ort_blobs.lock().unwrap().iter().try_for_each(|o| {
             ort_call!(
                 api.AddExternalInitializers,
                 session_options,
                 &o.name.as_ptr(),
                 &(o.ptr as *const _),
                 1,
-            )?;
-        }
+            )
+        })?;
 
         let onnx = {
             let mut data = Vec::new();
@@ -129,7 +138,7 @@ impl Session {
         ort_call!(
             api.AddRunConfigEntry,
             result.run_option,
-            std::mem::transmute(sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage),
+            sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage as *const _ as *const i8,
             "cpu:0\0".as_ptr() as *const i8,
         )?;
 

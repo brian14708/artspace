@@ -1,13 +1,12 @@
-use std::io::Read;
-use std::path::Path;
-use std::str::FromStr;
+use std::{io::Read, path::Path, str::FromStr};
 
 use tokenizers::Tokenizer;
 
-use crate::ort::Session;
-use crate::result::Error;
-use crate::result::Result;
-use crate::text_encoder::TextEncoder;
+use crate::{
+    ort::Session,
+    result::{Error, Result},
+    text_encoder::TextEncoder,
+};
 
 pub struct ClipEncoder {
     tokenizer: Tokenizer,

@@ -1,7 +1,9 @@
 use std::path::Path;
 
-use crate::ldm::{bert, clip};
-use crate::result::{Error, Result};
+use crate::{
+    ldm::{bert, clip},
+    result::{Error, Result},
+};
 
 pub trait TextEncoder {
     fn encode(&mut self, inp: &[String]) -> Result<ndarray::ArrayD<f32>>;
