@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     ffi::{c_void, CStr, CString},
     io::{Read, Seek},
+    path::Path,
     sync::Mutex,
 };
 
@@ -26,11 +27,8 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn load<R, P>(t: &mut tsar::Archive<R>, path: P) -> Result<Self>
-    where
-        R: Read + Seek,
-        P: AsRef<str>,
-    {
+    pub fn load(base: impl AsRef<Path>, path: impl AsRef<str>) -> Result<Self> {
+        let base = base.as_ref();
         let api = get_api();
         let mut session_options: *mut sys::OrtSessionOptions = std::ptr::null_mut();
         ort_call!(api.CreateSessionOptions, &mut session_options)?;
@@ -70,11 +68,11 @@ impl Session {
                     unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
                 }
 
-                ort_call!(
+                _ = ort_call!(
                     api.SessionOptionsAppendExecutionProvider_CUDA_V2,
                     session_options,
                     cuda_options,
-                )?;
+                );
             }
         }
 
@@ -92,65 +90,76 @@ impl Session {
             });
         }
 
-        load_blobs(t, &format!(".{}.json", path.as_ref()))?
-            .into_par_iter()
-            .try_for_each(|(k, mut v)| -> Result<()> {
-                let shape: smallvec::SmallVec<[_; 4]> =
-                    v.shape().into_iter().map(|s| s as i64).collect();
-
-                let mut tmp: Vec<u8> = Vec::new();
-                v.read_to_end(&mut tmp)?;
-
-                let mut blob: *mut sys::OrtValue = std::ptr::null_mut();
-                ort_call!(
-                    api.CreateTensorWithDataAsOrtValue,
-                    get_cpu_mem_info(),
-                    tmp.as_mut_ptr() as *mut _,
-                    tmp.len() as _,
-                    shape.as_ptr() as *const _,
-                    shape.len() as _,
-                    datatype_to_onnx(v.data_type()),
-                    &mut blob
-                )?;
-
-                ort_blobs.lock().unwrap().push(OrtWeight {
-                    name: CString::new(k).expect("CString::new failed"),
-                    _data: tmp,
-                    ptr: blob,
-                });
-                Ok(())
-            })?;
-
-        ort_blobs.lock().unwrap().iter().try_for_each(|o| {
-            ort_call!(
-                api.AddExternalInitializers,
-                session_options,
-                &o.name.as_ptr(),
-                &(o.ptr as *const _),
-                1,
-            )
-        })?;
-
-        let onnx = {
-            let mut data = Vec::new();
-            t.file_by_name(path)?.read_to_end(&mut data)?;
-            data
-        };
-
         let mut result = Self {
             session: std::ptr::null_mut(),
             run_option: std::ptr::null_mut(),
             outputs: Vec::new(),
         };
 
-        ort_call!(
-            api.CreateSessionFromArray,
-            get_env(),
-            onnx.as_ptr() as *const _,
-            onnx.len() as _,
-            session_options,
-            &mut result.session,
-        )?;
+        if base.is_file() {
+            let mut t = tsar::Archive::new(std::fs::File::open(base)?)?;
+            load_blobs(&mut t, &format!(".{}.json", path.as_ref()))?
+                .into_par_iter()
+                .try_for_each(|(k, mut v)| -> Result<()> {
+                    let shape: smallvec::SmallVec<[_; 4]> =
+                        v.shape().into_iter().map(|s| s as i64).collect();
+
+                    let mut tmp: Vec<u8> = Vec::new();
+                    v.read_to_end(&mut tmp)?;
+
+                    let mut blob: *mut sys::OrtValue = std::ptr::null_mut();
+                    ort_call!(
+                        api.CreateTensorWithDataAsOrtValue,
+                        get_cpu_mem_info(),
+                        tmp.as_mut_ptr() as *mut _,
+                        tmp.len() as _,
+                        shape.as_ptr() as *const _,
+                        shape.len() as _,
+                        datatype_to_onnx(v.data_type()),
+                        &mut blob
+                    )?;
+
+                    ort_blobs.lock().unwrap().push(OrtWeight {
+                        name: CString::new(k).expect("CString::new failed"),
+                        _data: tmp,
+                        ptr: blob,
+                    });
+                    Ok(())
+                })?;
+
+            ort_blobs.lock().unwrap().iter().try_for_each(|o| {
+                ort_call!(
+                    api.AddExternalInitializers,
+                    session_options,
+                    &o.name.as_ptr(),
+                    &(o.ptr as *const _),
+                    1,
+                )
+            })?;
+
+            let onnx = {
+                let mut data = Vec::new();
+                t.file_by_name(path)?.read_to_end(&mut data)?;
+                data
+            };
+            ort_call!(
+                api.CreateSessionFromArray,
+                get_env(),
+                onnx.as_ptr() as *const _,
+                onnx.len() as _,
+                session_options,
+                &mut result.session,
+            )?;
+        } else {
+            let onnx = path_to_cstring(path.as_ref());
+            ort_call!(
+                api.CreateSession,
+                get_env(),
+                onnx.as_ptr(),
+                session_options,
+                &mut result.session,
+            )?;
+        }
 
         ort_call!(api.CreateRunOptions, &mut result.run_option)?;
         ort_call!(
@@ -506,4 +515,21 @@ impl AsOnnxDataType for f64 {
     fn as_onnx_data_type() -> sys::ONNXTensorElementDataType {
         sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE
     }
+}
+
+#[cfg(unix)]
+fn path_to_cstring<P: AsRef<Path>>(path: P) -> CString {
+    use std::os::unix::ffi::OsStrExt;
+    CString::new(path.as_ref().as_os_str().as_bytes()).unwrap()
+}
+
+#[cfg(not(unix))]
+fn path_to_cstring<P: AsRef<Path>>(path: P) -> Vec<u16> {
+    use std::os::windows::ffi::OsStrExt;
+
+    path.as_ref()
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<_>>()
 }

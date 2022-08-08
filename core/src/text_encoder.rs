@@ -6,7 +6,9 @@ use crate::{
 };
 
 pub trait TextEncoder {
-    fn encode(&mut self, inp: &[String]) -> Result<ndarray::ArrayD<f32>>;
+    fn tokenize(&mut self, inp: &str) -> Result<tokenizers::Encoding>;
+    fn encode(&mut self, enc: &[tokenizers::Encoding]) -> Result<ndarray::ArrayD<f32>>;
+    fn unload_model(&mut self) {}
 }
 
 pub fn load(kind: impl AsRef<str>, path: impl AsRef<Path>) -> Result<Box<dyn TextEncoder>> {

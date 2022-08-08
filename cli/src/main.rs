@@ -39,7 +39,14 @@ fn main() {
             output,
         }) => {
             let mut m = artspace_core::text_encoder::load(kind, path).unwrap();
-            let out = m.encode(text).unwrap();
+            let out = {
+                let enc = text
+                    .iter()
+                    .map(|s| m.tokenize(s.as_str()))
+                    .collect::<Result<Vec<_>, _>>()
+                    .unwrap();
+                m.encode(&enc).unwrap()
+            };
             if let Some(path) = output {
                 ndarray_npy::write_npy(path, &out).unwrap();
             }
@@ -47,7 +54,12 @@ fn main() {
                 use std::time::Instant;
                 let now = Instant::now();
                 for _ in 0..*n {
-                    m.encode(text).unwrap();
+                    let enc = text
+                        .iter()
+                        .map(|s| m.tokenize(s.as_str()))
+                        .collect::<Result<Vec<_>, _>>()
+                        .unwrap();
+                    m.encode(&enc).unwrap();
                 }
                 let elapsed = now.elapsed();
                 println!(

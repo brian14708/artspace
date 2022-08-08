@@ -88,7 +88,6 @@ jobs:
           make prepare
           make env >> $GITHUB_ENV
           make pre-build-macos
-
       - run: make test
 
       - name: Build
@@ -138,7 +137,6 @@ jobs:
           make prepare
           make env >> $GITHUB_ENV
           make pre-build-windows
-
       - run: make test
 
       - name: Build
