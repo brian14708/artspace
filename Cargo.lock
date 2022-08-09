@@ -3801,8 +3801,10 @@ dependencies = [
  "cargo_toml",
  "heck 0.4.0",
  "json-patch",
+ "quote",
  "semver 1.0.13",
  "serde_json",
+ "tauri-codegen",
  "tauri-utils",
  "winres",
 ]

@@ -65,11 +65,11 @@ endif
 
 build: prepare
 	$(VERBOSE)$(MAKE) RELEASE=1 pre-build-$(TARGET_OS)
-	$(VERBOSE)pnpm recursive --filter ui exec tauri build $(TAURI_ARGS)
+	$(VERBOSE)pnpm recursive --filter app exec tauri build $(TAURI_ARGS)
 	$(VERBOSE)$(MAKE) RELEASE=1 post-build-$(TARGET_OS)
 
 dev: prepare
-	$(VERBOSE)pnpm recursive --filter ui exec tauri dev $(TAURI_ARGS)
+	$(VERBOSE)pnpm recursive --filter app exec tauri dev $(TAURI_ARGS)
 
 test: prepare
 	$(VERBOSE)cargo test $(CARGO_ARGS)
