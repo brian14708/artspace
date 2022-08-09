@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -89,7 +89,6 @@ jobs:
           make env >> $GITHUB_ENV
           make pre-build-macos
       - run: make test
-
       - name: Build
         uses: tauri-apps/tauri-action@v0
         env:
@@ -138,7 +137,6 @@ jobs:
           make env >> $GITHUB_ENV
           make pre-build-windows
       - run: make test
-
       - name: Build
         uses: tauri-apps/tauri-action@v0
         env:
