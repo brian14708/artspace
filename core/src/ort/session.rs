@@ -151,7 +151,7 @@ impl Session {
                 &mut result.session,
             )?;
         } else {
-            let onnx = path_to_cstring(path.as_ref());
+            let onnx = path_to_cstring(base.join(path.as_ref()));
             ort_call!(
                 api.CreateSession,
                 get_env(),

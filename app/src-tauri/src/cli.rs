@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{CommandFactory, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -28,7 +28,7 @@ enum Commands {
     },
 }
 
-fn main() {
+pub fn exec() {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::TextEncode {
@@ -68,6 +68,7 @@ fn main() {
                 );
             }
         }
-        None => Cli::command().print_help().unwrap(),
+        None => return,
     }
+    std::process::exit(0)
 }

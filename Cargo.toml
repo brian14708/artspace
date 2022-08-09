@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "app/src-tauri",
-  "cli",
   "core",
   "ort-sys",
 ]

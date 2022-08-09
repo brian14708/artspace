@@ -3,6 +3,8 @@
     windows_subsystem = "windows"
 )]
 
+mod cli;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!(
@@ -14,6 +16,8 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
+    cli::exec();
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
         // blocked by https://github.com/tauri-apps/tauri/pull/4894

@@ -58,19 +58,12 @@ name = "artspace-app"
 version = "0.1.0"
 dependencies = [
  "artspace-core",
+ "clap 3.2.16",
+ "ndarray-npy",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
-]
-
-[[package]]
-name = "artspace-cli"
-version = "0.1.0"
-dependencies = [
- "artspace-core",
- "clap 3.2.16",
- "ndarray-npy",
 ]
 
 [[package]]
