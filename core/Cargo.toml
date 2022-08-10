@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+itertools = "0.10.3"
 lazy_static = "1.4.0"
 ndarray = "0.15.6"
+ndarray-rand = "0.14.0"
 ort-sys = { path = "../ort-sys" }
 rayon = "1.5.3"
 scopeguard = "1.1.0"

@@ -3,9 +3,9 @@ use std::{io::Read, path::PathBuf, str::FromStr};
 use tokenizers::Tokenizer;
 
 use crate::{
+    model::{text_encoder::TextEncoder, Model},
     ort::Session,
     result::{Error, Result},
-    text_encoder::TextEncoder,
 };
 
 pub struct BertEncoder {
@@ -23,7 +23,7 @@ impl TextEncoder for BertEncoder {
 
     fn encode(&mut self, enc: &[tokenizers::Encoding]) -> Result<ndarray::ArrayD<f32>> {
         if enc.is_empty() {
-            return Ok(ndarray::ArrayD::zeros([0].as_slice()));
+            return Ok(ndarray::ArrayD::zeros([].as_slice()));
         }
         assert!(enc.iter().all(|e| e.len() == enc[0].len()));
 
@@ -48,7 +48,9 @@ impl TextEncoder for BertEncoder {
         let out = out.get_output_idx::<f32, ndarray::Ix3>(0)?;
         Ok(out.into_dyn().to_owned())
     }
+}
 
+impl Model for BertEncoder {
     fn unload_model(&mut self) {
         self.session = None;
     }

@@ -59,7 +59,9 @@ version = "0.1.0"
 dependencies = [
  "artspace-core",
  "clap 3.2.17",
+ "ndarray",
  "ndarray-npy",
+ "png 0.17.5",
  "serde",
  "serde_json",
  "tauri",
@@ -70,8 +72,10 @@ dependencies = [
 name = "artspace-core"
 version = "0.1.0"
 dependencies = [
+ "itertools 0.10.3",
  "lazy_static",
  "ndarray",
+ "ndarray-rand",
  "ort-sys",
  "rayon",
  "scopeguard",
@@ -1770,6 +1774,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2137,6 +2150,17 @@ dependencies = [
  "num-traits",
  "py_literal",
  "zip 0.5.13",
+]
+
+[[package]]
+name = "ndarray-rand"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65608f937acc725f5b164dcf40f4f0bc5d67dc268ab8a649d3002606718c4588"
+dependencies = [
+ "ndarray",
+ "rand 0.8.5",
+ "rand_distr",
 ]
 
 [[package]]
@@ -2947,6 +2971,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom 0.2.7",
+]
+
+[[package]]
+name = "rand_distr"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32cb0b9bc82b0a0876c2dd994a7e7a2683d3e7390ca40e6886785ef0c7e3ee31"
+dependencies = [
+ "num-traits",
+ "rand 0.8.5",
 ]
 
 [[package]]

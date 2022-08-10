@@ -5,8 +5,10 @@ use std::{
 
 use ort_sys as sys;
 
-use crate::ort::{get_api, ort_call};
-use crate::result::Result;
+use crate::{
+    ort::{get_api, ort_call},
+    result::Result,
+};
 
 lazy_static! {
     static ref G_ENV: AtomicPtr<sys::OrtEnv> = init();
@@ -51,7 +53,7 @@ fn init() -> AtomicPtr<sys::OrtEnv> {
     let mut env: *mut sys::OrtEnv = std::ptr::null_mut();
     ort_call!(
         api.CreateEnvWithGlobalThreadPools,
-        sys::OrtLoggingLevel_ORT_LOGGING_LEVEL_VERBOSE,
+        sys::OrtLoggingLevel_ORT_LOGGING_LEVEL_WARNING,
         lid.as_ptr(),
         topt,
         &mut env,

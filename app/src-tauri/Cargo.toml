@@ -23,6 +23,8 @@ serde = { version = "1.0.143", features = ["derive"] }
 tauri = { version = "1.0.5", features = ["api-all"] }
 clap = { version = "3.2.17", features = ["derive"] }
 ndarray-npy = "0.8.1"
+ndarray = "0.15.6"
+png = "0.17.5"
 
 [features]
 # by default Tauri runs in production mode

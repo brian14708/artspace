@@ -47,7 +47,12 @@ impl Session {
             sys::kOrtSessionOptionsConfigUseEnvAllocators as *const _ as *const i8,
             "1\0".as_ptr() as *const i8,
         )?;
-        ort_call!(api.EnableMemPattern, session_options)?;
+        ort_call!(
+            api.AddSessionConfigEntry,
+            session_options,
+            sys::kOrtSessionOptionsEnableQuantQDQCleanup as *const _ as *const i8,
+            "1\0".as_ptr() as *const i8,
+        )?;
 
         #[cfg(target_os = "macos")]
         {
@@ -61,7 +66,7 @@ impl Session {
             target_arch = "x86_64",
             any(target_os = "linux", target_os = "windows")
         ))]
-        {
+        if false {
             let mut cuda_options: *mut sys::OrtCUDAProviderOptionsV2 = std::ptr::null_mut();
             if ort_call!(api.CreateCUDAProviderOptions, &mut cuda_options).is_ok() {
                 defer! {
@@ -200,6 +205,37 @@ impl Session {
             inputs: SmallVec::new(),
         }
     }
+
+    pub fn inputs(&self) -> Result<Vec<String>> {
+        let api = get_api();
+        let mut in_len = 0;
+        ort_call!(api.SessionGetInputCount, self.session, &mut in_len)?;
+
+        let mut alloc: *mut sys::OrtAllocator = std::ptr::null_mut();
+        ort_call!(api.GetAllocatorWithDefaultOptions, &mut alloc)?;
+        let mut result = vec![];
+        for i in 0..in_len {
+            let mut name: *mut i8 = std::ptr::null_mut();
+            ort_call!(api.SessionGetInputName, self.session, i, alloc, &mut name,)?;
+            result.push(
+                unsafe { CStr::from_ptr(name) }
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+            unsafe {
+                (*alloc).Free.unwrap()(alloc, name as *mut _);
+            }
+        }
+        Ok(result)
+    }
+
+    pub fn outputs(&self) -> Result<Vec<String>> {
+        Ok(self
+            .outputs
+            .iter()
+            .map(|s| s.to_string_lossy().into_owned())
+            .collect())
+    }
 }
 
 impl Drop for Session {
@@ -212,6 +248,8 @@ impl Drop for Session {
         }
     }
 }
+
+unsafe impl Send for Session {}
 
 pub struct SessionRun<'s> {
     sess: &'s Session,
