@@ -18,10 +18,9 @@ fn greet(name: &str) -> String {
 fn main() {
     cli::exec();
 
+    #[allow(unused_imports)]
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
-        // blocked by https://github.com/tauri-apps/tauri/pull/4894
-        // .run(tauri::tauri_build_context!())
-        .run(tauri::generate_context!())
+        .run(tauri::tauri_build_context!())
         .expect("error while running tauri application");
 }
