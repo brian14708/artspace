@@ -75,8 +75,6 @@ def onnxruntime_download_url(target, version="1.12.1"):
     arch = target[0]
 
     base = f"https://github.com/microsoft/onnxruntime/releases/download/v{version}"
-    if os.environ.get("GH_PROXY"):
-        base = f"https://ghproxy.com/{base}"
 
     if os_name == "linux":
         if arch == "x86_64":
@@ -109,7 +107,11 @@ if __name__ == "__main__":
         with open(cachepath) as f:
             cache = json.load(f)
     if cache.get("url") != url:
-        download_and_extract(url, basedir)
+        if os.environ.get("GH_PROXY"):
+            dl_url = f"https://ghproxy.com/{url}"
+        else:
+            dl_url = url
+        download_and_extract(dl_url, basedir)
         cache["url"] = url
     with open(cachepath, "w") as f:
         json.dump(cache, f)

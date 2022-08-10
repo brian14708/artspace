@@ -100,7 +100,7 @@ vendor/universal-apple-darwin/.prepare: vendor/aarch64-apple-darwin/.prepare
 	$(VERBOSE)ln -s x86_64-apple-darwin vendor/universal-apple-darwin
 	$(VERBOSE)touch $@
 
-vendor/%/.prepare: scripts/prepare.py
+vendor/%/.prepare: scripts/prepare.py app/package.json
 	$(VERBOSE)python3 scripts/prepare.py $@
 	$(VERBOSE)pnpm i
 
