@@ -3,7 +3,11 @@
     windows_subsystem = "windows"
 )]
 
+use tauri::api::path;
+
 mod cli;
+mod model_manager;
+mod pipeline;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -15,8 +19,16 @@ fn greet(name: &str) -> String {
     )
 }
 
-fn main() {
-    cli::exec();
+#[tokio::main]
+async fn main() {
+    let model_manager = model_manager::ModelManager::new(
+        path::data_dir()
+            .unwrap_or_else(|| "./".into())
+            .join("artspace/models"),
+    )
+    .unwrap();
+
+    cli::exec(&model_manager).await;
 
     #[allow(unused_imports)]
     tauri::Builder::default()

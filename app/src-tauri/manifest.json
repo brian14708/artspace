@@ -1,0 +1,60 @@
+{
+  "models": {
+    "ldm/text2img-large/ldm.int8.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/ldm.int8.tsar",
+      "sha256": "3aa0f29a5dfdd597aaa5ef707dda28361c31af0eea0dd2038f27668f2b11dd85"
+    },
+    "ldm/text2img-large/ldm.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/ldm.tsar",
+      "sha256": "87a69022b21f538b3f311d103a947f13469cce0338eaf4801697958549e83dd5"
+    },
+    "ldm/text2img-large/bert.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/bert.tsar",
+      "sha256": "f15af5a42a2d5f0ca2736766fbbef6e645c8dbf0473d6eaf909e307c29b6c73b"
+    },
+    "ldm/text2img-large/bert.int8.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/bert.int8.tsar",
+      "sha256": "cb8bc328c83d6300364a64907695a91da1e6867aea353a32e5867c8370307978"
+    },
+    "ldm/text2img-large/vq.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/vq.tsar",
+      "sha256": "e48a7b239ff1c5b1ed28144571d3c084101d9f956b62a4b97eb8ef09c12ebe53"
+    },
+    "ldm/glid-3-xl/ldm.int8.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/glid-3-xl/ldm.int8.tsar",
+      "sha256": "7b93bf1f5acae61d67df52cb0ced66621aec3b861f3f9caf5767d7ef921e60df"
+    },
+    "ldm/glid-3-xl/ldm.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/glid-3-xl/ldm.tsar",
+      "sha256": "cf39d311b024e2bd092e4df25561ca8f328fd106624e18c22ed237765ab7757e"
+    },
+    "esrgan/x2plus.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/esrgan/x2plus.tsar",
+      "sha256": "f5b15d23889b1ce049bc909d04448af1669e53079d91ac3b16c0de9f0795f239"
+    },
+    "esrgan/x4plus.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/esrgan/x4plus.tsar",
+      "sha256": "9a17f0ad3143d0116e2bffce098d0b7732b691a05a4f1112b22014c052c17486"
+    },
+    "clip/vit-l-14.int8.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/clip/vit-l-14.int8.tsar",
+      "sha256": "5597b6213888f64fd3c2d85f840082ad244f0cdd08d0780cb2c004cb60fb6bc7"
+    },
+    "clip/vit-l-14.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/clip/vit-l-14.tsar",
+      "sha256": "d5975bf3efb1a98456ec6e8f98e90d194f6a19d76b5dc0d4da1b7d83a2d08731"
+    },
+    "swinir/realsr-m-2x.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/swinir/realsr-m-2x.tsar",
+      "sha256": "6001db1912e20829fb45abe7060df9823cb6bb067409918e89a8a001334ca54d"
+    },
+    "swinir/realsr-m-4x.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/swinir/realsr-m-4x.tsar",
+      "sha256": "5de12fba0be9aab12ac588ad6559660ba8d1fc5f6e32207343455e7f97620eaf"
+    },
+    "swinir/realsr-l-4x.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/swinir/realsr-l-4x.tsar",
+      "sha256": "f7f31ff1b06653f6d08660f9b895fcddce0e57e0d1ab54117a08447cff8dba25"
+    }
+  }
+}

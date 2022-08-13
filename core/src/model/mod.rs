@@ -13,6 +13,6 @@ mod esrgan;
 mod ldm;
 mod swinir;
 
-pub trait Model {
+pub trait Model: Send + Sync {
     fn unload_model(&mut self) {}
 }

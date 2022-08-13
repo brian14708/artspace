@@ -4,15 +4,15 @@ use ndarray::IxDyn;
 
 use crate::model::{Diffusion, DiffusionScheduleParam};
 
-pub struct DdimSampler {
-    pub model: Box<dyn Diffusion>,
+pub struct DdimSampler<'a> {
+    pub model: &'a mut dyn Diffusion,
     pub c: HashMap<String, ndarray::ArrayD<f32>>,
     pub seed: ndarray::ArrayD<f32>,
 }
 
-impl DdimSampler {
+impl<'a> DdimSampler<'a> {
     pub fn new(
-        model: Box<dyn Diffusion>,
+        model: &'a mut dyn Diffusion,
         condition: HashMap<String, ndarray::ArrayD<f32>>,
         uncondition: HashMap<String, ndarray::ArrayD<f32>>,
         seed: ndarray::ArrayD<f32>,
@@ -53,13 +53,6 @@ impl DdimSampler {
                         * 5.),
             );
         }
-        println!(
-            "{:?} {:?} {:?} {:?}",
-            t.alpha_cumprod,
-            t.alpha_cumprod_prev,
-            t.sigma,
-            ((1. - t.alpha_cumprod).sqrt() as f32)
-        );
         let pred_x0 = (&self.seed - &e_t * ((1. - t.alpha_cumprod).sqrt() as f32))
             / (t.alpha_cumprod.sqrt() as f32);
         let dir_xt = &e_t * ((1. - t.alpha_cumprod_prev).sqrt() as f32);

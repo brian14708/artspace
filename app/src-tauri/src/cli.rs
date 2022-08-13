@@ -1,8 +1,14 @@
-use std::{collections::HashMap, io::BufWriter, path::PathBuf};
+use std::{
+    collections::HashMap,
+    io::{BufWriter, Write},
+    path::PathBuf,
+};
 
 use artspace_core::ddim_sampler::DdimSampler;
 use clap::{Parser, Subcommand};
 use ndarray::{Axis, Slice};
+
+use crate::{model_manager::ModelManager, pipeline::Pipeline};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -50,9 +56,19 @@ enum Commands {
         #[clap(long)]
         height: Option<usize>,
     },
+    Pipeline {
+        kind: String,
+        text: String,
+        output: PathBuf,
+
+        #[clap(long)]
+        width: Option<f32>,
+        #[clap(long)]
+        height: Option<f32>,
+    },
 }
 
-pub fn exec() {
+pub async fn exec(mm: &ModelManager) {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::TextEncode {
@@ -108,7 +124,7 @@ pub fn exec() {
         }) => {
             let mut sr = artspace_core::model::load_super_resolution(sr_kind, sr_path).unwrap();
 
-            let m = artspace_core::model::load_diffusion(kind, path).unwrap();
+            let mut m = artspace_core::model::load_diffusion(kind, path).unwrap();
             let cond: ndarray::ArrayD<f32> = ndarray_npy::read_npy(cond_path).unwrap();
             let clip_cond: ndarray::ArrayD<f32> = ndarray_npy::read_npy(clip_cond_path).unwrap();
             let noise = m.make_noise(
@@ -146,7 +162,7 @@ pub fn exec() {
             .into_iter()
             .collect();
             let d = {
-                let mut d = DdimSampler::new(m, cd, ud, noise);
+                let mut d = DdimSampler::new(m.as_mut(), cd, ud, noise);
                 for i in sched {
                     d.next(&i);
                 }
@@ -182,6 +198,29 @@ pub fn exec() {
                         .unwrap();
                 }
             }
+        }
+        Some(Commands::Pipeline {
+            kind,
+            text,
+            output,
+            width,
+            height,
+        }) => {
+            let mut p = Pipeline::new(kind, mm, |p| println!("{}", p))
+                .await
+                .unwrap();
+            p.step_text(text).await.unwrap();
+            let img = p
+                .step_diffuse(width.unwrap_or(1.), height.unwrap_or(1.), |p| {
+                    println!("{}", p)
+                })
+                .await
+                .unwrap();
+
+            let img = p.step_post_process(&img).await.unwrap();
+
+            let mut out = std::fs::File::create(output).unwrap();
+            out.write_all(&p.get_png(&img)).unwrap();
         }
         None => return,
     }

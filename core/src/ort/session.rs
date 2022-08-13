@@ -167,12 +167,6 @@ impl Session {
         }
 
         ort_call!(api.CreateRunOptions, &mut result.run_option)?;
-        ort_call!(
-            api.AddRunConfigEntry,
-            result.run_option,
-            sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage as *const _ as *const i8,
-            "cpu:0\0".as_ptr() as *const i8,
-        )?;
 
         let mut out_len = 0;
         ort_call!(api.SessionGetOutputCount, result.session, &mut out_len)?;
@@ -250,6 +244,8 @@ impl Drop for Session {
 }
 
 unsafe impl Send for Session {}
+
+unsafe impl Sync for Session {}
 
 pub struct SessionRun<'s> {
     sess: &'s Session,
