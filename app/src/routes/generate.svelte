@@ -101,13 +101,15 @@
   </div>
 
   <div class="p-4 pb-6">
-    <a href="/text">
-      <button
-        class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
-      >
-        Back
-      </button>
-    </a>
+    {#if processing === null}
+      <a href="/text">
+        <button
+          class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
+        >
+          Back
+        </button>
+      </a>
+    {/if}
 
     <button
       class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"

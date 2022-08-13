@@ -152,7 +152,7 @@ jobs:
           args: --target universal-apple-darwin
 
       - name: get version
-        run: echo "PACKAGE_VERSION=$(node -p "require('./ui/package.json').version")" >> $GITHUB_ENV
+        run: echo "PACKAGE_VERSION=$(node -p "require('./app/package.json').version")" >> $GITHUB_ENV
 
       - run: |
           make TARGET=universal-apple-darwin post-build-macos

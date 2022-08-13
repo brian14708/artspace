@@ -50,7 +50,7 @@ impl<'a> DdimSampler<'a> {
                 &(seed.index_axis(ndarray::Axis(0), i + batch).to_owned()
                     + (seed.index_axis(ndarray::Axis(0), i).to_owned()
                         - seed.index_axis(ndarray::Axis(0), i + batch))
-                        * 5.),
+                        * 10.),
             );
         }
         let pred_x0 = (&self.seed - &e_t * ((1. - t.alpha_cumprod).sqrt() as f32))

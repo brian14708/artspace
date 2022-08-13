@@ -17,7 +17,7 @@
 
 <slot />
 <div
-  class="fixed bottom-0 bg-gray-300 left-0 right-0 font-mono text-gray-700 text-sm"
+  class="fixed bottom-0 bg-gray-300 left-0 right-0 font-mono text-gray-700 text-sm px-3"
 >
   Status: {status || "OK"}
 </div>
