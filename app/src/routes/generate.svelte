@@ -2,12 +2,15 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { save } from "@tauri-apps/api/dialog";
+  import { invoke } from "@tauri-apps/api";
+  import Loading from "$lib/Loading.svelte";
 
   let images: Array<string | null> = [null];
   let processing: number | null = null;
+  let loading = false;
 
-  import { invoke } from "@tauri-apps/api";
   const savef = async function (i: number) {
+    loading = true;
     let filePath = await save({
       filters: [
         {
@@ -23,6 +26,7 @@
       filePath += ".png";
     }
     await invoke("step_post", { idx: i, path: filePath });
+    loading = false;
   };
 
   const w = parseFloat($page.url.searchParams.get("w") || "1");
@@ -52,6 +56,9 @@
   onMount(check);
 </script>
 
+{#if loading}
+  <Loading />
+{/if}
 <div
   class="flex flex-col justify-center min-h-screen max-w-[800px] m-auto text-center"
 >

@@ -105,18 +105,21 @@ vendor/%/.prepare: scripts/prepare.py app/package.json
 	$(VERBOSE)pnpm i
 
 pre-build-windows:
+	$(VERBOSE)touch app/src-tauri/build.rs
 	$(VERBOSE)mkdir -p $(OUT_DIR)/deps
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)/deps
 post-build-windows:
 
 pre-build-macos:
+	$(VERBOSE)touch app/src-tauri/build.rs
 post-build-macos:
 	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime.1.12.1.dylib $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
 	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
 
 pre-build-linux:
+	$(VERBOSE)touch app/src-tauri/build.rs
 	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime_providers_*.so $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
 post-build-linux:
