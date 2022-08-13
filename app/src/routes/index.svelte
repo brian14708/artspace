@@ -12,4 +12,8 @@
   });
 </script>
 
-<h1>Loading...</h1>
+<h1
+  class="text-4xl text-center flex flex-col min-h-screen place-content-center text-gray-600"
+>
+  Initializing...
+</h1>

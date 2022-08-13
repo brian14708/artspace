@@ -54,10 +54,7 @@ async fn init(kind: String) -> Option<bool> {
         )
         .unwrap();
 
-        let e = (Pipeline::new(&kind, &mm, |p| {
-            *CURRENT_STATUS.lock().unwrap() = p;
-        }))
-        .await;
+        let e = (Pipeline::new(&kind, &mm, log)).await;
         *p = Some(set_error(e)?);
     }
     Some(true)
@@ -65,6 +62,7 @@ async fn init(kind: String) -> Option<bool> {
 
 #[tauri::command]
 async fn step_text(text: String) -> Option<bool> {
+    log("Processing text...");
     RESULTS.lock().await.clear();
     let mut p = PIPELINE.lock().await;
     set_error(p.as_mut().unwrap().step_text(&text).await)?;
@@ -74,14 +72,7 @@ async fn step_text(text: String) -> Option<bool> {
 #[tauri::command]
 async fn step_diffuse(w: f32, h: f32, idx: usize) -> Option<Vec<u8>> {
     let mut p = PIPELINE.lock().await;
-    let img = set_error(
-        p.as_mut()
-            .unwrap()
-            .step_diffuse(w, h, |p| {
-                *CURRENT_STATUS.lock().unwrap() = p;
-            })
-            .await,
-    )?;
+    let img = set_error(p.as_mut().unwrap().step_diffuse(w, h, log).await)?;
     let png = p.as_ref().unwrap().get_png(&img);
     let mut result = RESULTS.lock().await;
     if result.len() <= idx {
@@ -94,7 +85,7 @@ async fn step_diffuse(w: f32, h: f32, idx: usize) -> Option<Vec<u8>> {
 
 #[tauri::command]
 async fn step_post(idx: usize, path: String) -> Option<()> {
-    *CURRENT_STATUS.lock().unwrap() = "Processing image...".to_string();
+    log("Processing image...");
     let mut p = PIPELINE.lock().await;
     let img = set_error(
         p.as_mut()
@@ -103,11 +94,14 @@ async fn step_post(idx: usize, path: String) -> Option<()> {
             .await,
     )?;
 
-    *CURRENT_STATUS.lock().unwrap() = "Saving image...".to_string();
+    log("Saving image...");
     let mut out = std::fs::File::create(PathBuf::from(path)).unwrap();
-    out.write_all(&p.as_ref().unwrap().get_png(&img)).unwrap();
-
+    set_error(out.write_all(&p.as_ref().unwrap().get_png(&img)))?;
     Some(())
+}
+
+fn log(s: impl Into<String>) {
+    *CURRENT_STATUS.lock().unwrap() = s.into();
 }
 
 #[tokio::main]

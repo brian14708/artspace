@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api";
   import { goto } from "$app/navigation";
+  import Loading from "$lib/Loading.svelte";
 
   const RATIOS = [
     [1, 1 / 2],
@@ -10,8 +11,10 @@
   ];
   let text = "";
   let selected = 2;
+  let loading = false;
 
   function submit() {
+    loading = true;
     invoke("step_text", { text: text }).then((response) => {
       if (response === true) {
         goto(`/generate?w=${RATIOS[selected][0]}&h=${RATIOS[selected][1]}`);
@@ -20,6 +23,9 @@
   }
 </script>
 
+{#if loading}
+  <Loading />
+{/if}
 <div
   class="flex flex-col justify-center min-h-screen max-w-[800px] m-auto text-center"
 >

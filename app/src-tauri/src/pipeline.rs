@@ -89,8 +89,8 @@ impl Pipeline {
 
         let noise = self.diffuse.make_noise(
             1,
-            (w / min * 256.).round() as usize / 16 * 16,
-            (h / min * 256.).round() as usize / 16 * 16,
+            (w / min * 256.).round() as usize / 32 * 32,
+            (h / min * 256.).round() as usize / 32 * 32,
         );
         let sched = self.diffuse.make_schedule(self.steps);
 

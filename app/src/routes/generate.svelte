@@ -52,28 +52,65 @@
   onMount(check);
 </script>
 
-<div class="grid grid-cols-2 grid-flow-row text-center">
-  {#each images as img, i}
-    {#if img}
+<div
+  class="flex flex-col justify-center min-h-screen max-w-[800px] m-auto text-center"
+>
+  <div class="flex flex-row flex-wrap justify-center gap-4 m-4">
+    {#each images as img, i}
       <div
-        class="bg-no-repeat bg-contain bg-center min-w-[300px] min-h-[300px]"
-        style:background-image={`url(${img})`}
+        class="bg-no-repeat bg-contain bg-center min-w-[300px] min-h-[300px] relative"
+        style:background-image={img ? `url(${img})` : "none"}
       >
-        <button
-          on:click={() => {
-            savef(i);
-          }}>OK</button
+        <div
+          class={"absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center " +
+            (img
+              ? "opacity-0 bg-none hover:bg-white hover:bg-opacity-50 transition-all hover:opacity-100 flex-col gap-2"
+              : "")}
         >
-        <button
-          on:click={() => {
-            images[i] = null;
-            check();
-          }}>X</button
-        >
+          {#if img}
+            <button
+              class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
+              on:click={() => {
+                images[i] = null;
+                check();
+              }}
+            >
+              Delete
+            </button>
+            {#if processing === null}
+              <button
+                class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
+                on:click={() => {
+                  savef(i);
+                }}>Save</button
+              >
+            {/if}
+          {:else}
+            Loading...
+          {/if}
+        </div>
       </div>
-    {:else}
-      <div class="min-w-[300px] min-h-[300px]" />
-    {/if}
-  {/each}
+    {/each}
+  </div>
+
+  <div class="p-4 pb-6">
+    <a href="/text">
+      <button
+        class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
+      >
+        Back
+      </button>
+    </a>
+
+    <button
+      class="uppercase bg-zinc-600 p-3 rounded-lg font-bold text-white text-sm py-2"
+      on:click={() => {
+        images.push(null);
+        images = images;
+        check();
+      }}
+    >
+      Add
+    </button>
+  </div>
 </div>
-<a href="/text">Back</a>
