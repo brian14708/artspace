@@ -7,6 +7,7 @@ use std::{
 use artspace_core::ddim_sampler::DdimSampler;
 use clap::{Parser, Subcommand};
 use ndarray::{Axis, Slice};
+use tauri::api::path;
 
 use crate::{model_manager::ModelManager, pipeline::Pipeline};
 
@@ -68,7 +69,7 @@ enum Commands {
     },
 }
 
-pub async fn exec(mm: &ModelManager) {
+pub async fn exec() {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::TextEncode {
@@ -206,7 +207,14 @@ pub async fn exec(mm: &ModelManager) {
             width,
             height,
         }) => {
-            let mut p = Pipeline::new(kind, mm, |p| println!("{}", p))
+            let mm = ModelManager::new(
+                path::data_dir()
+                    .unwrap_or_else(|| "./".into())
+                    .join("artspace/models"),
+            )
+            .unwrap();
+
+            let mut p = Pipeline::new(kind, &mm, |p| println!("{}", p))
                 .await
                 .unwrap();
             p.step_text(text).await.unwrap();

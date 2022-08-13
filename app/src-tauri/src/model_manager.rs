@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use async_std::{io::WriteExt, task};
+use async_std::task;
 use serde::Deserialize;
 
 pub struct ModelManager {
@@ -70,15 +70,9 @@ impl ModelManager {
         for f in files.iter() {
             let outpath = temp_extract.path().join(f);
             ensure_dir(&outpath)?;
-            let mut dst = async_std::fs::File::create(outpath).await?;
+            let mut dst = std::fs::File::create(outpath)?;
             let mut src = ar.file_by_name(f)?;
-            let mut buf = vec![0; 1024 * 1024];
-            loop {
-                match src.read(&mut buf)? {
-                    0 => break,
-                    n => dst.write_all(&buf[..n]).await?,
-                }
-            }
+            std::io::copy(&mut src, &mut dst)?;
         }
 
         {

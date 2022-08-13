@@ -32,6 +32,7 @@ async-std = "1.12.0"
 tempfile = "3.3.0"
 tsar-rs = { git = "https://github.com/brian14708/tsar", version = "0.1.0" }
 futures = "0.3.21"
+lazy_static = "1.4.0"
 
 [features]
 # by default Tauri runs in production mode

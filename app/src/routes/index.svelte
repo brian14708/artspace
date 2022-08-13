@@ -1,16 +1,15 @@
 <script>
   import { invoke } from "@tauri-apps/api";
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
 
-  let name = "";
   onMount(() => {
-    invoke("greet", { name: "World" }).then((response) => {
-      name = response;
+    invoke("init", { kind: "small" }).then((response) => {
+      if (response === true) {
+        goto("/text");
+      }
     });
   });
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>
-  {name}
-</p>
+<h1>Loading...</h1>
