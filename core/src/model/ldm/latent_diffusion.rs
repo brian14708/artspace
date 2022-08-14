@@ -162,13 +162,18 @@ impl Diffusion for LatentDiffusion {
             }
         };
 
-        let mut temp_cond: HashMap<String, ndarray::ArrayD<f32>> = HashMap::new();
+        let mut temp: HashMap<String, ndarray::ArrayD<f32>> = HashMap::new();
 
         let mut run = session.prepare();
         run.set_input("x", x)?;
         match &ti {
             TimeInput::F32(t) => run.set_input("t", t)?,
             TimeInput::I64(t) => run.set_input("t", t)?,
+        }
+
+        if self.input_types.get("img").is_some() {
+            let zero = ndarray::ArrayD::<f32>::zeros(x.shape());
+            temp.insert("_img".to_string(), zero);
         }
 
         if let Some(true) = self.metadata.normalize_condition {
@@ -186,7 +191,7 @@ impl Diffusion for LatentDiffusion {
                     .map(|(i, &s)| if i == 0 { s } else { 1 })
                     .collect();
                 let norm = norm.into_shape(shape.as_slice()).unwrap();
-                temp_cond.insert(k.clone(), v / norm);
+                temp.insert(k.clone(), v / norm);
             }
         }
         for (k, v) in conditions {
@@ -203,24 +208,31 @@ impl Diffusion for LatentDiffusion {
                     }
                     std::cmp::Ordering::Equal => {}
                     std::cmp::Ordering::Greater => {
-                        let mut v = temp_cond.remove(k).unwrap_or_else(|| v.clone());
+                        let mut v = temp.remove(k).unwrap_or_else(|| v.clone());
                         for _ in 0..d {
                             v = v.insert_axis(Axis(1));
                         }
-                        temp_cond.insert(k.clone(), v);
+                        temp.insert(k.clone(), v);
                     }
                 }
             }
         }
         for (k, v) in conditions {
             if self.input_types.get(k).is_some() {
-                if let Some(vv) = temp_cond.get(k) {
+                if let Some(vv) = temp.get(k) {
                     run.set_input(k, vv)?;
                 } else {
                     run.set_input(k, v)?;
                 }
             }
         }
+
+        for (k, v) in &temp {
+            if let Some(k) = k.strip_prefix("_") {
+                run.set_input(k, &v)?;
+            }
+        }
+
         let ret = run.exec()?;
         let y = ret.get_output_idx::<f32, ndarray::Ix4>(0)?;
         Ok(y.into_dyn().to_owned())

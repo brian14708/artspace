@@ -45,6 +45,11 @@ where
 }
 
 #[tauri::command]
+fn list_pipeline() -> Vec<String> {
+    Pipeline::list()
+}
+
+#[tauri::command]
 async fn init(kind: String) -> Option<bool> {
     let mut p = PIPELINE.lock().await;
     if p.is_none() {
@@ -114,6 +119,7 @@ async fn main() {
     #[allow(unused_imports)]
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
+            list_pipeline,
             get_status,
             init,
             step_text,

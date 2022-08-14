@@ -78,16 +78,21 @@ impl ModelManager {
         let mut downloaded = 0;
         let mut temp_out = tempfile::tempfile_in(&self.data_dir)?;
 
+        let mut prev = 0;
         while let Some(chunk) = resp.chunk().await? {
             temp_out.write_all(&chunk)?;
             downloaded += chunk.len() as u64;
-            progress(format!(
-                "Downloading {} ({}/{})...",
-                name,
-                downloaded,
-                total_size.unwrap_or(0)
-            ));
+            if downloaded > prev + total_size.unwrap_or(0) / 1000 {
+                prev = downloaded;
+                progress(format!(
+                    "Downloading {} ({}/{})...",
+                    name,
+                    downloaded,
+                    total_size.unwrap_or(0)
+                ));
+            }
         }
+        progress(format!("Download {} finished", name,));
 
         let temp_extract = tempfile::tempdir_in(&self.data_dir)?;
         let mut ar = tsar::Archive::new(temp_out).unwrap();
