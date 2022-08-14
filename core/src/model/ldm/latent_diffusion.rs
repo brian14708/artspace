@@ -228,8 +228,8 @@ impl Diffusion for LatentDiffusion {
         }
 
         for (k, v) in &temp {
-            if let Some(k) = k.strip_prefix("_") {
-                run.set_input(k, &v)?;
+            if let Some(k) = k.strip_prefix('_') {
+                run.set_input(k, v)?;
             }
         }
 
