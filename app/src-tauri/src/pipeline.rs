@@ -4,15 +4,21 @@ use std::{
 };
 
 use anyhow::Result;
-use artspace_core::ddim_sampler::DdimSampler;
+use artspace_core::sampler::DdimSampler;
 use ndarray::{Axis, Slice};
 
 use crate::model_manager::ModelManager;
 
+struct TextEncoder {
+    model: Arc<Mutex<Box<dyn artspace_core::model::TextEncoder>>>,
+    key: String,
+}
+
 pub struct Pipeline {
-    text_encoders: Vec<Arc<Mutex<Box<dyn artspace_core::model::TextEncoder>>>>,
+    text_encoders: Vec<TextEncoder>,
     diffuse: Box<dyn artspace_core::model::Diffusion>,
     autoencoder: Box<dyn artspace_core::model::AutoEncoder>,
+    diffuse_output_size: (usize, usize),
     steps: usize,
     sr: Option<Box<dyn artspace_core::model::SuperResolution>>,
 
@@ -24,21 +30,28 @@ impl Pipeline {
         if kind == "small" {
             Ok(Self {
                 text_encoders: vec![
-                    Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
-                        "clip",
-                        mm.download("clip/vit-l-14.int8.tsar", &progress).await?,
-                    )?)),
-                    Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
-                        "ldm/bert",
-                        mm.download("ldm/text2img-large/bert.int8.tsar", &progress)
-                            .await?,
-                    )?)),
+                    TextEncoder {
+                        model: Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
+                            "clip",
+                            mm.download("clip/vit-l-14.int8.tsar", &progress).await?,
+                        )?)),
+                        key: "clip".to_string(),
+                    },
+                    TextEncoder {
+                        model: Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
+                            "ldm/bert",
+                            mm.download("ldm/text2img-large/bert.int8.tsar", &progress)
+                                .await?,
+                        )?)),
+                        key: "c".to_string(),
+                    },
                 ],
                 diffuse: artspace_core::model::load_diffusion(
-                    "ldm/ldm-clip",
+                    "ldm/ldm",
                     mm.download("ldm/glid-3-xl/ldm.int8.tsar", &progress)
                         .await?,
                 )?,
+                diffuse_output_size: (256, 32),
                 autoencoder: artspace_core::model::load_auto_encoder(
                     "ldm/vq",
                     mm.download("ldm/text2img-large/vq.tsar", &progress).await?,
@@ -59,9 +72,9 @@ impl Pipeline {
     pub async fn step_text(&mut self, s: &str) -> Result<()> {
         let f = futures::future::join_all(self.text_encoders.iter_mut().map(|e| {
             let s = s.to_owned();
-            let e = e.clone();
+            let model = e.model.clone();
             async_std::task::spawn_blocking(move || -> Result<ndarray::ArrayD<f32>> {
-                let mut e = e.lock().unwrap();
+                let mut e = model.lock().unwrap();
                 let enc = e.tokenize(&s)?;
                 let uncond_enc = e.tokenize("")?;
                 Ok(e.encode(&[uncond_enc, enc])?)
@@ -83,49 +96,38 @@ impl Pipeline {
     ) -> Result<ndarray::ArrayD<f32>> {
         self.text_encoders
             .iter_mut()
-            .for_each(|e| e.lock().unwrap().unload_model());
+            .for_each(|e| e.model.lock().unwrap().unload_model());
 
         let min = w.min(h);
 
         let noise = self.diffuse.make_noise(
             1,
-            (w / min * 256.).round() as usize / 32 * 32,
-            (h / min * 256.).round() as usize / 32 * 32,
+            (w / min * self.diffuse_output_size.0 as f32).round() as usize
+                / self.diffuse_output_size.1
+                * self.diffuse_output_size.1,
+            (h / min * self.diffuse_output_size.0 as f32).round() as usize
+                / self.diffuse_output_size.1
+                * self.diffuse_output_size.1,
         );
         let sched = self.diffuse.make_schedule(self.steps);
 
-        let cond: HashMap<_, _> = [
-            (
-                "clip".to_owned(),
-                self.text_embedding.as_ref().unwrap()[0]
-                    .slice_axis(Axis(0), Slice::from(1usize..))
-                    .to_owned(),
-            ),
-            (
-                "c".to_owned(),
-                self.text_embedding.as_ref().unwrap()[1]
-                    .slice_axis(Axis(0), Slice::from(1usize..))
-                    .to_owned(),
-            ),
-        ]
-        .into_iter()
-        .collect();
-        let uncond: HashMap<_, _> = [
-            (
-                "clip".to_owned(),
-                self.text_embedding.as_ref().unwrap()[0]
+        let mut cond = HashMap::<String, ndarray::ArrayD<f32>>::new();
+        let mut uncond = HashMap::<String, ndarray::ArrayD<f32>>::new();
+
+        for (i, e) in self.text_encoders.iter().enumerate() {
+            uncond.insert(
+                e.key.clone(),
+                self.text_embedding.as_ref().unwrap()[i]
                     .slice_axis(Axis(0), Slice::from(..1usize))
                     .to_owned(),
-            ),
-            (
-                "c".to_owned(),
-                self.text_embedding.as_ref().unwrap()[1]
-                    .slice_axis(Axis(0), Slice::from(..1usize))
+            );
+            cond.insert(
+                e.key.clone(),
+                self.text_embedding.as_ref().unwrap()[i]
+                    .slice_axis(Axis(0), Slice::from(1usize..))
                     .to_owned(),
-            ),
-        ]
-        .into_iter()
-        .collect();
+            );
+        }
 
         let d = {
             let mut d = DdimSampler::new(self.diffuse.as_mut(), cond, uncond, noise);

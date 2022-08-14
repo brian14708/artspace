@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::{io::Read, path::PathBuf};
+
+use serde::Deserialize;
 
 use crate::{
     model::{AutoEncoder, Model},
@@ -7,8 +9,14 @@ use crate::{
 };
 
 pub struct Vq {
+    metadata: Metadata,
     path: PathBuf,
     session: Option<Session>,
+}
+
+#[derive(Deserialize)]
+struct Metadata {
+    scale_factor: f64,
 }
 
 impl AutoEncoder for Vq {
@@ -23,7 +31,7 @@ impl AutoEncoder for Vq {
             self.session
                 .insert(Session::load(&self.path, "decoder.onnx")?)
         };
-        let x = (1. / 0.18215) as f32 * x;
+        let x = (1. / self.metadata.scale_factor) as f32 * x;
 
         let mut run = session.prepare();
         run.set_input("z", &x)?;
@@ -42,8 +50,21 @@ impl Model for Vq {
 
 impl Vq {
     pub fn new(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
+        let metadata_json = if path.is_dir() {
+            std::fs::read_to_string(path.join("metadata.json"))?
+        } else {
+            let mut ar = tsar::Archive::new(std::fs::File::open(&path)?)?;
+            let mut buf = String::new();
+            ar.file_by_name("metadata.json")?.read_to_string(&mut buf)?;
+            buf
+        };
+
+        let metadata: Metadata = serde_json::from_str(&metadata_json)?;
+
         Ok(Self {
-            path: path.into(),
+            metadata,
+            path,
             session: None,
         })
     }

@@ -18,7 +18,19 @@
     },
     "ldm/text2img-large/vq.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/text2img-large/vq.tsar",
-      "sha256": "e48a7b239ff1c5b1ed28144571d3c084101d9f956b62a4b97eb8ef09c12ebe53"
+      "sha256": "f7d26ae288259a4906888bd43b7d7c80350b0e5e1513848aec1ade55bbc36188"
+    },
+    "ldm/rdm768/rdm.int8.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/rdm768/rdm.int8.tsar",
+      "sha256": "6491b30c49529d5672c25a2950a7283a9a27511daed8256f20655c4def6aa0e5"
+    },
+    "ldm/rdm768/vq.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/rdm768/vq.tsar",
+      "sha256": "f1987a419412ff211e25aa5feb453ce3f38ff2af6e8f58901b371a38bd3a9099"
+    },
+    "ldm/rdm768/rdm.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/rdm768/rdm.tsar",
+      "sha256": "7d89b07ba0af33aa147418984e83e4a83a924fcf453a7b79ca16120c12c4a0a5"
     },
     "ldm/glid-3-xl/ldm.int8.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/glid-3-xl/ldm.int8.tsar",

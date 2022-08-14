@@ -3,9 +3,10 @@
     windows_subsystem = "windows"
 )]
 
+use std::{io::Write, sync::Mutex};
+
 use async_std::path::PathBuf;
 use lazy_static::lazy_static;
-use std::{io::Write, sync::Mutex};
 use tauri::api::path;
 
 use crate::pipeline::Pipeline;
@@ -15,7 +16,7 @@ mod model_manager;
 mod pipeline;
 
 lazy_static! {
-    static ref CURRENT_STATUS: Mutex<String> = Mutex::new(String::from("TEST"));
+    static ref CURRENT_STATUS: Mutex<String> = Mutex::new(String::from(""));
     static ref PIPELINE: async_std::sync::Mutex<Option<Pipeline>> =
         async_std::sync::Mutex::new(None);
     static ref RESULTS: async_std::sync::Mutex<Vec<ndarray::ArrayD<f32>>> =
@@ -53,6 +54,8 @@ async fn init(kind: String) -> Option<bool> {
                 .join("artspace/models"),
         )
         .unwrap();
+
+        let _ = mm.cleanup().await;
 
         let e = (Pipeline::new(&kind, &mm, log)).await;
         *p = Some(set_error(e)?);

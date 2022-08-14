@@ -1,9 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
-use super::{
-    ldm::{clip_latent_diffusion, latent_diffusion},
-    Model,
-};
+use super::{ldm::latent_diffusion, Model};
 use crate::result::{Error, Result};
 
 #[derive(Debug)]
@@ -28,9 +25,6 @@ pub trait Diffusion: Model {
 pub fn load_diffusion(kind: impl AsRef<str>, path: impl AsRef<Path>) -> Result<Box<dyn Diffusion>> {
     match kind.as_ref() {
         "ldm/ldm" => Ok(Box::new(latent_diffusion::LatentDiffusion::new(
-            path.as_ref(),
-        )?)),
-        "ldm/ldm-clip" => Ok(Box::new(clip_latent_diffusion::ClipLatentDiffusion::new(
             path.as_ref(),
         )?)),
 

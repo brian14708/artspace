@@ -9,7 +9,7 @@ use std::{
 use ort_sys as sys;
 use rayon::prelude::*;
 use serde::Deserialize;
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 use super::ort_call;
 use crate::{
@@ -24,6 +24,11 @@ pub struct Session {
     session: *mut sys::OrtSession,
     run_option: *mut sys::OrtRunOptions,
     outputs: Vec<CString>,
+}
+
+pub struct TensorInfo {
+    pub elem_type: DataType,
+    pub shape: SmallVec<[usize; 4]>,
 }
 
 impl Session {
@@ -55,7 +60,7 @@ impl Session {
         )?;
 
         #[cfg(target_os = "macos")]
-        {
+        if std::env::var("DISABLE_COREML").is_ok() {
             let coreml: u32 = 0;
             super::status(unsafe {
                 sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
@@ -66,7 +71,7 @@ impl Session {
             target_arch = "x86_64",
             any(target_os = "linux", target_os = "windows")
         ))]
-        if false {
+        if std::env::var("USE_CUDA").is_ok() {
             let mut cuda_options: *mut sys::OrtCUDAProviderOptionsV2 = std::ptr::null_mut();
             if ort_call!(api.CreateCUDAProviderOptions, &mut cuda_options).is_ok() {
                 defer! {
@@ -200,25 +205,55 @@ impl Session {
         }
     }
 
-    pub fn inputs(&self) -> Result<Vec<String>> {
+    pub fn inputs(&self) -> Result<HashMap<String, TensorInfo>> {
         let api = get_api();
         let mut in_len = 0;
         ort_call!(api.SessionGetInputCount, self.session, &mut in_len)?;
 
         let mut alloc: *mut sys::OrtAllocator = std::ptr::null_mut();
         ort_call!(api.GetAllocatorWithDefaultOptions, &mut alloc)?;
-        let mut result = vec![];
+        let mut result = HashMap::new();
         for i in 0..in_len {
-            let mut name: *mut i8 = std::ptr::null_mut();
-            ort_call!(api.SessionGetInputName, self.session, i, alloc, &mut name,)?;
-            result.push(
-                unsafe { CStr::from_ptr(name) }
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            let mut cname: *mut i8 = std::ptr::null_mut();
+            ort_call!(api.SessionGetInputName, self.session, i, alloc, &mut cname)?;
+            let name = unsafe { CStr::from_ptr(cname) }
+                .to_string_lossy()
+                .into_owned();
             unsafe {
-                (*alloc).Free.unwrap()(alloc, name as *mut _);
+                (*alloc).Free.unwrap()(alloc, cname as *mut _);
             }
+
+            let mut type_info: *mut sys::OrtTypeInfo = std::ptr::null_mut();
+            ort_call!(api.SessionGetInputTypeInfo, self.session, i, &mut type_info)?;
+            defer! {
+                unsafe { api.ReleaseTypeInfo.unwrap()(type_info); }
+            };
+
+            let mut tensor_shape: *const sys::OrtTensorTypeAndShapeInfo = std::ptr::null_mut();
+            ort_call!(api.CastTypeInfoToTensorInfo, type_info, &mut tensor_shape)?;
+
+            let mut elem_type: sys::ONNXTensorElementDataType =
+                sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED;
+            ort_call!(api.GetTensorElementType, tensor_shape, &mut elem_type)?;
+
+            let mut dims = 0;
+            ort_call!(api.GetDimensionsCount, tensor_shape, &mut dims)?;
+
+            let mut shape: SmallVec<[i64; 4]> = smallvec![0; dims as usize];
+            ort_call!(
+                api.GetDimensions,
+                tensor_shape,
+                shape.as_mut_ptr() as *mut _,
+                dims
+            )?;
+
+            result.insert(
+                name,
+                TensorInfo {
+                    elem_type: DataType::from(elem_type),
+                    shape: shape.iter().map(|s| *s as usize).collect(),
+                },
+            );
         }
         Ok(result)
     }
@@ -548,6 +583,53 @@ impl AsOnnxDataType for f32 {
 impl AsOnnxDataType for f64 {
     fn as_onnx_data_type() -> sys::ONNXTensorElementDataType {
         sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DataType {
+    Unknown,
+    Byte,
+    Float32,
+    Float64,
+    Float16,
+    Bfloat16,
+    Int8,
+    Uint8,
+    Int16,
+    Uint16,
+    Int32,
+    Uint32,
+    Int64,
+    Uint64,
+}
+
+impl From<sys::ONNXTensorElementDataType> for DataType {
+    fn from(d: sys::ONNXTensorElementDataType) -> Self {
+        match d {
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED => {
+                DataType::Byte
+            }
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT => DataType::Float32,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE => {
+                DataType::Float64
+            }
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 => {
+                DataType::Float16
+            }
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16 => {
+                DataType::Bfloat16
+            }
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8 => DataType::Int8,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8 => DataType::Uint8,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16 => DataType::Int16,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16 => DataType::Uint16,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32 => DataType::Int32,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32 => DataType::Uint32,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64 => DataType::Int64,
+            sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64 => DataType::Uint64,
+            _ => DataType::Unknown,
+        }
     }
 }
 

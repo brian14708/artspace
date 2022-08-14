@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     io::{self, Read, Seek, Write},
     path::{Path, PathBuf},
 };
@@ -30,10 +30,36 @@ impl ModelManager {
             std::fs::create_dir_all(&data_dir)?;
         }
 
-        let t = include_bytes!("../manifest.json");
-        let manifest: Manifest = serde_json::from_slice(t)?;
+        let manifest: Manifest = serde_json::from_slice(include_bytes!("../manifest.json"))?;
 
         Ok(Self { data_dir, manifest })
+    }
+
+    pub async fn cleanup(&self) -> Result<()> {
+        let sha256 = self
+            .manifest
+            .models
+            .iter()
+            .map(|(_, m)| m.sha256.clone())
+            .collect::<HashSet<_>>();
+
+        let mut to_delete = Vec::new();
+        for entry in std::fs::read_dir(&self.data_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                let name = path.file_name().unwrap().to_str().unwrap();
+                if !sha256.contains(name) {
+                    to_delete.push(path);
+                }
+            }
+        }
+
+        for path in to_delete {
+            async_std::fs::remove_dir_all(&path).await?;
+        }
+
+        Ok(())
     }
 
     pub async fn download(&self, name: &str, progress: impl Fn(String)) -> Result<PathBuf> {

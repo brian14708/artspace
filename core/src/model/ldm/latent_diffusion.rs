@@ -1,18 +1,38 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, io::Read, path::PathBuf};
 
 use itertools::Itertools;
-use ndarray::Array;
+use ndarray::{Array, Axis};
 use ndarray_rand::{rand_distr::Normal, RandomExt};
+use serde::Deserialize;
+use smallvec::SmallVec;
 
 use crate::{
     model::{Diffusion, DiffusionScheduleParam, Model},
-    ort::Session,
-    result::Result,
+    ort::{DataType, Session, TensorInfo},
+    result::{Error, Result},
 };
 
 pub struct LatentDiffusion {
+    metadata: Metadata,
     path: PathBuf,
     session: Option<Session>,
+    input_types: HashMap<String, TensorInfo>,
+}
+
+#[derive(Deserialize)]
+struct Metadata {
+    beta: BetaParam,
+    normalize_condition: Option<bool>,
+    num_channels: Option<usize>,
+    image_scale: Option<usize>,
+    timesteps: usize,
+}
+
+#[derive(Deserialize)]
+struct BetaParam {
+    start: f64,
+    end: f64,
+    schedule: String,
 }
 
 impl Diffusion for LatentDiffusion {
@@ -21,14 +41,12 @@ impl Diffusion for LatentDiffusion {
             return Vec::new();
         }
 
-        // TODO store in json
-        const BETA_START: f64 = 0.00085;
-        const BETA_END: f64 = 0.012;
-        const NUM_STEPS: usize = 1000;
+        assert_eq!(self.metadata.beta.schedule, "linear");
 
-        let betas = (0..NUM_STEPS).map(|i| {
-            (BETA_START.sqrt()
-                + (BETA_END.sqrt() - BETA_START.sqrt()) * i as f64 / (NUM_STEPS - 1) as f64)
+        let betas = (0..self.metadata.timesteps).map(|i| {
+            (self.metadata.beta.start.sqrt()
+                + (self.metadata.beta.end.sqrt() - self.metadata.beta.start.sqrt()) * i as f64
+                    / (self.metadata.timesteps - 1) as f64)
                 .powi(2)
         });
 
@@ -43,16 +61,17 @@ impl Diffusion for LatentDiffusion {
 
         let timesteps: Vec<_> = if true {
             // original
-            let num_steps = num_steps.min(NUM_STEPS);
-            (0..NUM_STEPS)
-                .step_by(NUM_STEPS / num_steps)
+            let num_steps = num_steps.min(self.metadata.timesteps);
+            (0..self.metadata.timesteps)
+                .step_by(self.metadata.timesteps / num_steps)
                 .map(|x| x + 1)
                 .collect()
         } else {
             // uniform
             (0..num_steps)
                 .map(|i| {
-                    1 + ((NUM_STEPS - 1) as f64 * (i as f64) / (num_steps as f64)).round() as usize
+                    1 + ((self.metadata.timesteps - 1) as f64 * (i as f64) / (num_steps as f64))
+                        .round() as usize
                 })
                 .dedup()
                 .collect()
@@ -90,7 +109,16 @@ impl Diffusion for LatentDiffusion {
     }
 
     fn make_noise(&self, b: usize, w: usize, h: usize) -> ndarray::ArrayD<f32> {
-        Array::random((b, 4, h / 8, w / 8), Normal::new(0.0, 1.0).unwrap()).into_dyn()
+        Array::random(
+            (
+                b,
+                self.metadata.num_channels.unwrap_or(4),
+                h / self.metadata.image_scale.unwrap_or(8),
+                w / self.metadata.image_scale.unwrap_or(8),
+            ),
+            Normal::new(0.0, 1.0).unwrap(),
+        )
+        .into_dyn()
     }
 
     fn execute(
@@ -106,16 +134,92 @@ impl Diffusion for LatentDiffusion {
         let session = if let Some(session) = &self.session {
             session
         } else {
-            self.session.insert(Session::load(&self.path, "ldm.onnx")?)
+            let s = self.session.insert(Session::load(&self.path, "ldm.onnx")?);
+            self.input_types = s.inputs()?;
+            s
         };
 
-        let mut tt = ndarray::Array1::<i64>::zeros((x.shape()[0],));
-        tt.fill(t.timestep as i64);
+        enum TimeInput {
+            F32(ndarray::Array1<f32>),
+            I64(ndarray::Array1<i64>),
+        }
+        let ti: TimeInput = match self.input_types["t"].elem_type {
+            DataType::Float32 => {
+                let mut tt = ndarray::Array1::<f32>::zeros((x.shape()[0],));
+                tt.fill(t.timestep as f32);
+                TimeInput::F32(tt)
+            }
+            DataType::Int64 => {
+                let mut tt = ndarray::Array1::<i64>::zeros((x.shape()[0],));
+                tt.fill(t.timestep as i64);
+                TimeInput::I64(tt)
+            }
+            t => {
+                return Err(Error::InvalidInput(format!(
+                    "Unsupported time type: {:?}",
+                    t
+                )))
+            }
+        };
+
+        let mut temp_cond: HashMap<String, ndarray::ArrayD<f32>> = HashMap::new();
+
         let mut run = session.prepare();
-        run.set_input("t", &tt)?;
         run.set_input("x", x)?;
+        match &ti {
+            TimeInput::F32(t) => run.set_input("t", t)?,
+            TimeInput::I64(t) => run.set_input("t", t)?,
+        }
+
+        if let Some(true) = self.metadata.normalize_condition {
+            for (k, v) in conditions {
+                let mut norm = v.mapv(|v| v * v);
+                while norm.shape().len() > 1 {
+                    norm = norm.sum_axis(Axis(norm.ndim() - 1));
+                }
+                norm.map_inplace(|v| *v = v.sqrt());
+
+                let shape: SmallVec<[usize; 4]> = v
+                    .shape()
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &s)| if i == 0 { s } else { 1 })
+                    .collect();
+                let norm = norm.into_shape(shape.as_slice()).unwrap();
+                temp_cond.insert(k.clone(), v / norm);
+            }
+        }
         for (k, v) in conditions {
-            run.set_input(k, v)?;
+            if let Some(t) = self.input_types.get(k) {
+                let d = t.shape.len() as isize - v.shape().len() as isize;
+                match d.cmp(&0) {
+                    std::cmp::Ordering::Less => {
+                        return Err(Error::InvalidInput(format!(
+                            "Condition {:?} has {} dimensions, but model expects {}",
+                            k,
+                            v.shape().len(),
+                            t.shape.len()
+                        )));
+                    }
+                    std::cmp::Ordering::Equal => {}
+                    std::cmp::Ordering::Greater => {
+                        let mut v = temp_cond.remove(k).unwrap_or_else(|| v.clone());
+                        for _ in 0..d {
+                            v = v.insert_axis(Axis(1));
+                        }
+                        temp_cond.insert(k.clone(), v);
+                    }
+                }
+            }
+        }
+        for (k, v) in conditions {
+            if self.input_types.get(k).is_some() {
+                if let Some(vv) = temp_cond.get(k) {
+                    run.set_input(k, vv)?;
+                } else {
+                    run.set_input(k, v)?;
+                }
+            }
         }
         let ret = run.exec()?;
         let y = ret.get_output_idx::<f32, ndarray::Ix4>(0)?;
@@ -131,9 +235,23 @@ impl Model for LatentDiffusion {
 
 impl LatentDiffusion {
     pub fn new(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
+        let metadata_json = if path.is_dir() {
+            std::fs::read_to_string(path.join("metadata.json"))?
+        } else {
+            let mut ar = tsar::Archive::new(std::fs::File::open(&path)?)?;
+            let mut buf = String::new();
+            ar.file_by_name("metadata.json")?.read_to_string(&mut buf)?;
+            buf
+        };
+
+        let metadata: Metadata = serde_json::from_str(&metadata_json)?;
+
         Ok(Self {
-            path: path.into(),
+            metadata,
+            path,
             session: None,
+            input_types: HashMap::new(),
         })
     }
 }

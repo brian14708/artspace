@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use artspace_core::ddim_sampler::DdimSampler;
+use artspace_core::sampler::DdimSampler;
 use clap::{Parser, Subcommand};
 use ndarray::{Axis, Slice};
 use tauri::api::path;
@@ -164,8 +164,9 @@ pub async fn exec() {
             .collect();
             let d = {
                 let mut d = DdimSampler::new(m.as_mut(), cd, ud, noise);
-                for i in sched {
-                    d.next(&i);
+                for (i, p) in sched.iter().enumerate() {
+                    println!("{}/{}", i, sched.len());
+                    d.next(p);
                 }
                 d.seed
             };
