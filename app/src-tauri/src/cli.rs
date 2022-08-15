@@ -163,10 +163,10 @@ pub async fn exec() {
             .into_iter()
             .collect();
             let d = {
-                let mut d = DdimSampler::new(m.as_mut(), cd, ud, noise);
-                for (i, p) in sched.iter().enumerate() {
+                let mut d = DdimSampler::new(m.as_mut(), &sched, cd, ud, noise);
+                for (i, _) in sched.iter().enumerate() {
                     println!("{}/{}", i, sched.len());
-                    d.next(p);
+                    d.next(i);
                 }
                 d.seed
             };

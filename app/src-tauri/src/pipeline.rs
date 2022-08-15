@@ -134,10 +134,10 @@ impl Pipeline {
         }
 
         let d = {
-            let mut d = DdimSampler::new(self.diffuse.as_mut(), cond, uncond, noise);
-            for (i, s) in sched.iter().enumerate() {
+            let mut d = DdimSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
+            for (i, _) in sched.iter().enumerate() {
                 progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
-                d.next(s);
+                d.next(i);
             }
             d.seed
         };

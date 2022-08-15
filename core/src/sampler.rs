@@ -1,11 +1,13 @@
-use std::collections::HashMap;
-
-use ndarray::IxDyn;
+use std::{
+    collections::{HashMap, VecDeque},
+    iter,
+};
 
 use crate::model::{Diffusion, DiffusionScheduleParam};
 
 pub struct DdimSampler<'a> {
     pub model: &'a mut dyn Diffusion,
+    pub steps: &'a Vec<DiffusionScheduleParam>,
     pub c: HashMap<String, ndarray::ArrayD<f32>>,
     pub seed: ndarray::ArrayD<f32>,
 }
@@ -13,37 +15,41 @@ pub struct DdimSampler<'a> {
 impl<'a> DdimSampler<'a> {
     pub fn new(
         model: &'a mut dyn Diffusion,
+        steps: &'a Vec<DiffusionScheduleParam>,
         condition: HashMap<String, ndarray::ArrayD<f32>>,
         uncondition: HashMap<String, ndarray::ArrayD<f32>>,
         seed: ndarray::ArrayD<f32>,
     ) -> Self {
-        let mut c = HashMap::new();
-        for (k, v) in uncondition {
-            let tmp = condition[&k].view();
-            let vv = v.view();
-            let s = (0..seed.shape()[0])
-                .map(|i| tmp.index_axis(ndarray::Axis(0), i))
-                .into_iter()
-                .chain((0..seed.shape()[0]).map(|_| vv.index_axis(ndarray::Axis(0), 0)))
-                .collect::<Vec<_>>();
-            let s = ndarray::stack(ndarray::Axis(0), s.as_slice()).unwrap();
-            c.insert(k, s.to_owned());
-        }
+        let batch = seed.shape()[0];
+        let c: HashMap<_, _> = uncondition
+            .into_iter()
+            .map(|(k, uncond)| {
+                let s = [condition[&k].view()]
+                    .into_iter()
+                    .chain(iter::repeat(uncond.view()).take(batch))
+                    .collect::<Vec<_>>();
+                (
+                    k,
+                    ndarray::concatenate(ndarray::Axis(0), s.as_slice()).unwrap(),
+                )
+            })
+            .collect();
 
-        DdimSampler { model, c, seed }
+        Self {
+            model,
+            steps,
+            c,
+            seed,
+        }
     }
 
-    pub fn next(&mut self, t: &DiffusionScheduleParam) {
-        let seed = ndarray::stack(ndarray::Axis(0), &[self.seed.view(), self.seed.view()]).unwrap();
-        let shape: Vec<_> = [seed.shape()[0] * seed.shape()[1]]
-            .iter()
-            .chain(&seed.shape()[2..])
-            .cloned()
-            .collect();
-        let seed = seed.into_shape(IxDyn(shape.as_slice())).unwrap();
-
-        let seed = self.model.execute(&seed, t, &self.c).unwrap();
+    pub fn next(&mut self, i: usize) {
+        let t = &self.steps[i];
         let batch = self.seed.shape()[0];
+
+        let seed =
+            ndarray::concatenate(ndarray::Axis(0), &[self.seed.view(), self.seed.view()]).unwrap();
+        let seed = self.model.execute(&seed, t, &self.c).unwrap();
         let mut e_t = ndarray::ArrayD::<f32>::zeros(self.seed.shape());
         for i in 0..batch {
             e_t.index_axis_mut(ndarray::Axis(0), i).assign(
@@ -58,5 +64,92 @@ impl<'a> DdimSampler<'a> {
         let dir_xt = &e_t * ((1. - t.alpha_cumprod_prev).sqrt() as f32);
         // TODO noise
         self.seed = (t.alpha_cumprod_prev.sqrt() as f32) * pred_x0 + dir_xt;
+    }
+}
+
+pub struct PlmsSampler<'a> {
+    pub model: &'a mut dyn Diffusion,
+    pub steps: &'a Vec<DiffusionScheduleParam>,
+    pub c: HashMap<String, ndarray::ArrayD<f32>>,
+    pub seed: ndarray::ArrayD<f32>,
+    pub eps: VecDeque<ndarray::ArrayD<f32>>,
+}
+
+impl<'a> PlmsSampler<'a> {
+    pub fn new(
+        model: &'a mut dyn Diffusion,
+        steps: &'a Vec<DiffusionScheduleParam>,
+        condition: HashMap<String, ndarray::ArrayD<f32>>,
+        uncondition: HashMap<String, ndarray::ArrayD<f32>>,
+        seed: ndarray::ArrayD<f32>,
+    ) -> Self {
+        let batch = seed.shape()[0];
+        let c: HashMap<_, _> = uncondition
+            .into_iter()
+            .map(|(k, uncond)| {
+                let s = [condition[&k].view()]
+                    .into_iter()
+                    .chain(iter::repeat(uncond.view()).take(batch))
+                    .collect::<Vec<_>>();
+                (
+                    k,
+                    ndarray::concatenate(ndarray::Axis(0), s.as_slice()).unwrap(),
+                )
+            })
+            .collect();
+
+        Self {
+            model,
+            steps,
+            c,
+            seed,
+            eps: VecDeque::new(),
+        }
+    }
+
+    fn exec(
+        &mut self,
+        x: &ndarray::ArrayD<f32>,
+        t: &DiffusionScheduleParam,
+    ) -> ndarray::ArrayD<f32> {
+        let seed = ndarray::concatenate(ndarray::Axis(0), &[x.view(), x.view()]).unwrap();
+
+        let batch = self.seed.shape()[0];
+        let seed = self.model.execute(&seed, t, &self.c).unwrap();
+        let mut e_t = ndarray::ArrayD::<f32>::zeros(self.seed.shape());
+        for i in 0..batch {
+            e_t.index_axis_mut(ndarray::Axis(0), i).assign(
+                &(seed.index_axis(ndarray::Axis(0), i + batch).to_owned()
+                    + (seed.index_axis(ndarray::Axis(0), i).to_owned()
+                        - seed.index_axis(ndarray::Axis(0), i + batch))
+                        * 10.),
+            );
+        }
+        e_t
+    }
+
+    pub fn next(&mut self, i: usize) {
+        let t = &self.steps[i];
+        let e_t = self.exec(&self.seed.to_owned(), t);
+
+        let e_t_prime = match self.eps.len() {
+            0 => e_t.to_owned(),
+            1 => (3. / 2. * e_t.to_owned() - 1. / 2. * &self.eps[0]),
+            2 => (23. / 12. * e_t.to_owned() - 16. / 12. * &self.eps[1] + 5. / 12. * &self.eps[0]),
+            _ => {
+                55. / 24. * e_t.to_owned() - 59. / 24. * &self.eps[2] + 37. / 24. * &self.eps[1]
+                    - 9. / 24. * &self.eps[0]
+            }
+        };
+
+        let pred_x0 = (&self.seed - &e_t_prime * ((1. - t.alpha_cumprod).sqrt() as f32))
+            / (t.alpha_cumprod.sqrt() as f32);
+        let dir_xt = &e_t_prime * ((1. - t.alpha_cumprod_prev).sqrt() as f32);
+        self.seed = (t.alpha_cumprod_prev.sqrt() as f32) * pred_x0 + dir_xt;
+
+        self.eps.push_back(e_t);
+        if self.eps.len() >= 4 {
+            self.eps.pop_front();
+        }
     }
 }
