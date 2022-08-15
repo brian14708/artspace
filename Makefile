@@ -59,8 +59,10 @@ ifdef CI
 	$(VERBOSE)rm -f .cargo/config.toml
 else
 	$(VERBOSE)mkdir -p .cargo
-	$(VERBOSE)echo "[target.'cfg(target_os = \"macos\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib,-rpath,@executable_path/../lib\"]\n" > .cargo/config.toml
-	$(VERBOSE)echo "[target.'cfg(target_os = \"linux\")']\nrustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib\"]\n" >> .cargo/config.toml
+	$(VERBOSE)echo "[target.'cfg(target_os = \"macos\")']" > .cargo/config.toml
+	$(VERBOSE)echo "rustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib,-rpath,@executable_path/../lib\"]" >> .cargo/config.toml
+	$(VERBOSE)echo "[target.'cfg(target_os = \"linux\")']" >> .cargo/config.toml
+	$(VERBOSE)echo "rustflags = [\"-C\", \"link-args=-Wl,-rpath,$(shell pwd)/vendor/$(TARGET)/lib\"]" >> .cargo/config.toml
 endif
 
 build: prepare
@@ -105,21 +107,18 @@ vendor/%/.prepare: scripts/prepare.py app/package.json
 	$(VERBOSE)pnpm i
 
 pre-build-windows:
-	$(VERBOSE)touch app/src-tauri/build.rs
 	$(VERBOSE)mkdir -p $(OUT_DIR)/deps
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/onnxruntime*.dll $(OUT_DIR)/deps
 post-build-windows:
 
 pre-build-macos:
-	$(VERBOSE)touch app/src-tauri/build.rs
 post-build-macos:
 	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime.1.12.1.dylib $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
 	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
 
 pre-build-linux:
-	$(VERBOSE)touch app/src-tauri/build.rs
 	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
 	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime_providers_*.so $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
 post-build-linux:
