@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
-  import { save } from "@tauri-apps/api/dialog";
-  import { invoke } from "@tauri-apps/api";
   import Loading from "$lib/Loading.svelte";
+  import { getApi } from "$lib/tauri";
 
   let images: Array<string | null> = [null];
   let processing: number | null = null;
@@ -11,7 +10,8 @@
 
   const savef = async function (i: number) {
     loading = true;
-    let filePath = await save({
+    let api = await getApi();
+    let filePath = await api.dialog.save({
       filters: [
         {
           name: "Image",
@@ -25,28 +25,32 @@
     if (!filePath.endsWith(".png")) {
       filePath += ".png";
     }
-    await invoke("step_post", { idx: i, path: filePath });
+    await api.invoke("step_post", { idx: i, path: filePath });
     loading = false;
   };
 
   const w = parseFloat($page.url.searchParams.get("w") || "1");
   const h = parseFloat($page.url.searchParams.get("h") || "1");
-  function check() {
+  async function check() {
+    let api = await getApi();
     if (processing === null) {
       for (let i = 0; i < images.length; i++) {
         if (images[i] === null) {
           processing = i;
 
-          invoke("step_diffuse", { w: w, h: h, idx: i }).then((response) => {
-            if (response) {
-              let arr = Uint8Array.from(response as Array<number>);
-              let b = new Blob([arr]);
-              let url = URL.createObjectURL(b);
-              images[i] = url;
-              processing = null;
-              check();
-            }
+          let response = await api.invoke("step_diffuse", {
+            w: w,
+            h: h,
+            idx: i,
           });
+          if (response) {
+            let arr = Uint8Array.from(response as Array<number>);
+            let b = new Blob([arr]);
+            let url = URL.createObjectURL(b);
+            images[i] = url;
+            processing = null;
+            check();
+          }
           return;
         }
       }
