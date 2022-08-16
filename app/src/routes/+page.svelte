@@ -1,9 +1,11 @@
-<script>
-  import { invoke } from "@tauri-apps/api";
+<script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { getApi } from "$lib/tauri";
 
-  onMount(() => {
+  onMount(async () => {
+    const { invoke } = await getApi();
+
     invoke("init", { kind: "small" }).then((response) => {
       if (response === true) {
         goto("/text");

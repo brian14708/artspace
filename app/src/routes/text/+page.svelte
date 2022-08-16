@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api";
   import { goto } from "$app/navigation";
   import Loading from "$lib/Loading.svelte";
+  import { getApi } from "$lib/tauri";
 
   const RATIOS = [
     [1, 1 / 2],
@@ -13,9 +13,9 @@
   let selected = 2;
   let loading = false;
 
-  function submit() {
+  async function submit() {
     loading = true;
-    invoke("step_text", { text: text }).then((response) => {
+    (await getApi()).invoke("step_text", { text: text }).then((response) => {
       if (response === true) {
         goto(`/generate?w=${RATIOS[selected][0]}&h=${RATIOS[selected][1]}`);
       }
