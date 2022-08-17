@@ -2,13 +2,11 @@
   import "../app.css";
 
   import { onDestroy, onMount } from "svelte";
-  import { getApi } from "$lib/tauri";
+  import { invoke } from "@tauri-apps/api";
 
   let status = "";
   let interval: ReturnType<typeof setInterval> | null = null;
   onMount(async () => {
-    const { invoke } = await getApi();
-
     interval = setInterval(() => {
       invoke("get_status", {}).then((response) => {
         if (status !== response) {

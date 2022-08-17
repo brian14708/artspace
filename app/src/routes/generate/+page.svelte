@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import Loading from "$lib/Loading.svelte";
-  import { getApi } from "$lib/tauri";
+  import { invoke, dialog } from "@tauri-apps/api";
 
   let images: Array<string | null> = [null];
   let processing: number | null = null;
@@ -10,8 +10,7 @@
 
   const savef = async function (i: number) {
     loading = true;
-    let api = await getApi();
-    let filePath = await api.dialog.save({
+    let filePath = await dialog.save({
       filters: [
         {
           name: "Image",
@@ -25,20 +24,19 @@
     if (!filePath.endsWith(".png")) {
       filePath += ".png";
     }
-    await api.invoke("step_post", { idx: i, path: filePath });
+    await invoke("step_post", { idx: i, path: filePath });
     loading = false;
   };
 
   const w = parseFloat($page.url.searchParams.get("w") || "1");
   const h = parseFloat($page.url.searchParams.get("h") || "1");
   async function check() {
-    let api = await getApi();
     if (processing === null) {
       for (let i = 0; i < images.length; i++) {
         if (images[i] === null) {
           processing = i;
 
-          let response = await api.invoke("step_diffuse", {
+          let response = await invoke("step_diffuse", {
             w: w,
             h: h,
             idx: i,
