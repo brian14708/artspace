@@ -132,24 +132,30 @@ impl<'a> PlmsSampler<'a> {
         let t = &self.steps[i];
         let e_t = self.exec(&self.seed.to_owned(), t);
 
+        if self.eps.len() >= 4 {
+            self.eps.pop_back();
+        }
+        self.eps.push_front(e_t);
+
         let e_t_prime = match self.eps.len() {
-            0 => e_t.to_owned(),
-            1 => (3. / 2. * e_t.to_owned() - 1. / 2. * &self.eps[0]),
-            2 => (23. / 12. * e_t.to_owned() - 16. / 12. * &self.eps[1] + 5. / 12. * &self.eps[0]),
-            _ => {
-                55. / 24. * e_t.to_owned() - 59. / 24. * &self.eps[2] + 37. / 24. * &self.eps[1]
-                    - 9. / 24. * &self.eps[0]
+            1 => self.eps[0].to_owned(),
+            2 => (3. / 2. * self.eps[0].to_owned() - 1. / 2. * &self.eps[1]),
+            3 => {
+                23. / 12. * self.eps[0].to_owned() - 16. / 12. * &self.eps[1]
+                    + 5. / 12. * &self.eps[2]
             }
+            4 => {
+                55. / 24. * self.eps[0].to_owned() - 59. / 24. * &self.eps[1]
+                    + 37. / 24. * &self.eps[2]
+                    - 9. / 24. * &self.eps[3]
+            }
+            _ => unreachable!(),
         };
 
-        let pred_x0 = (&self.seed - &e_t_prime * ((1. - t.alpha_cumprod).sqrt() as f32))
-            / (t.alpha_cumprod.sqrt() as f32);
-        let dir_xt = &e_t_prime * ((1. - t.alpha_cumprod_prev).sqrt() as f32);
-        self.seed = (t.alpha_cumprod_prev.sqrt() as f32) * pred_x0 + dir_xt;
-
-        self.eps.push_back(e_t);
-        if self.eps.len() >= 4 {
-            self.eps.pop_front();
-        }
+        let prev_over_alpha_sqrt = (t.alpha_cumprod_prev / t.alpha_cumprod).sqrt();
+        self.seed = prev_over_alpha_sqrt as f32 * &self.seed
+            + ((1. - t.alpha_cumprod_prev).sqrt()
+                - prev_over_alpha_sqrt * (1. - t.alpha_cumprod).sqrt()) as f32
+                * &e_t_prime;
     }
 }

@@ -1,6 +1,5 @@
 use std::{collections::HashMap, io::Read, path::PathBuf};
 
-use itertools::Itertools;
 use ndarray::{Array, Axis};
 use ndarray_rand::{rand_distr::Normal, RandomExt};
 use serde::Deserialize;
@@ -59,7 +58,7 @@ impl Diffusion for LatentDiffusion {
             .chain(Some(0.))
             .collect();
 
-        let timesteps: Vec<_> = if true {
+        let timesteps: Vec<_> = if false {
             // original
             let num_steps = num_steps.min(self.metadata.timesteps);
             (0..self.metadata.timesteps)
@@ -67,13 +66,14 @@ impl Diffusion for LatentDiffusion {
                 .map(|x| x + 1)
                 .collect()
         } else {
-            // uniform
+            // power function
             (0..num_steps)
                 .map(|i| {
-                    1 + ((self.metadata.timesteps - 1) as f64 * (i as f64) / (num_steps as f64))
+                    (((i as f64) / ((num_steps - 1) as f64)).powf(1.2)
+                        * (self.metadata.timesteps as f64 - 2.))
                         .round() as usize
+                        + 1
                 })
-                .dedup()
                 .collect()
         };
 
