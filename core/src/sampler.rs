@@ -67,15 +67,16 @@ impl<'a> DdimSampler<'a> {
     }
 }
 
-pub struct PlmsSampler<'a> {
+// https://github.com/huggingface/diffusers/blob/main/src/diffusers/schedulers/scheduling_lms_discrete.py
+pub struct LmsSampler<'a> {
     pub model: &'a mut dyn Diffusion,
     pub steps: &'a Vec<DiffusionScheduleParam>,
     pub c: HashMap<String, ndarray::ArrayD<f32>>,
     pub seed: ndarray::ArrayD<f32>,
-    pub eps: VecDeque<ndarray::ArrayD<f32>>,
+    pub derivatives: VecDeque<ndarray::ArrayD<f32>>,
 }
 
-impl<'a> PlmsSampler<'a> {
+impl<'a> LmsSampler<'a> {
     pub fn new(
         model: &'a mut dyn Diffusion,
         steps: &'a Vec<DiffusionScheduleParam>,
@@ -103,17 +104,14 @@ impl<'a> PlmsSampler<'a> {
             steps,
             c,
             seed,
-            eps: VecDeque::new(),
+            derivatives: VecDeque::new(),
         }
     }
 
-    fn exec(
-        &mut self,
-        x: &ndarray::ArrayD<f32>,
-        t: &DiffusionScheduleParam,
-    ) -> ndarray::ArrayD<f32> {
-        let seed = ndarray::concatenate(ndarray::Axis(0), &[x.view(), x.view()]).unwrap();
-
+    fn exec(&mut self, t: &DiffusionScheduleParam, sigma: f32) -> ndarray::ArrayD<f32> {
+        let mut seed =
+            ndarray::concatenate(ndarray::Axis(0), &[self.seed.view(), self.seed.view()]).unwrap();
+        seed /= (sigma.powi(2) + 1.).sqrt();
         let batch = self.seed.shape()[0];
         let seed = self.model.execute(&seed, t, &self.c).unwrap();
         let mut e_t = ndarray::ArrayD::<f32>::zeros(self.seed.shape());
@@ -122,40 +120,64 @@ impl<'a> PlmsSampler<'a> {
                 &(seed.index_axis(ndarray::Axis(0), i + batch).to_owned()
                     + (seed.index_axis(ndarray::Axis(0), i).to_owned()
                         - seed.index_axis(ndarray::Axis(0), i + batch))
-                        * 10.),
+                        * 7.),
             );
         }
         e_t
     }
 
+    fn sigma(t: &DiffusionScheduleParam) -> f64 {
+        ((1. - t.alpha_cumprod) / t.alpha_cumprod).sqrt()
+    }
+
     pub fn next(&mut self, i: usize) {
         let t = &self.steps[i];
-        let e_t = self.exec(&self.seed.to_owned(), t);
+        let sigma = Self::sigma(t);
 
-        if self.eps.len() >= 4 {
-            self.eps.pop_back();
+        if i == 0 {
+            self.seed *= sigma as f32;
         }
-        self.eps.push_front(e_t);
 
-        let e_t_prime = match self.eps.len() {
-            1 => self.eps[0].to_owned(),
-            2 => 3. / 2. * self.eps[0].to_owned() - 1. / 2. * &self.eps[1],
-            3 => {
-                23. / 12. * self.eps[0].to_owned() - 16. / 12. * &self.eps[1]
-                    + 5. / 12. * &self.eps[2]
-            }
-            4 => {
-                55. / 24. * self.eps[0].to_owned() - 59. / 24. * &self.eps[1]
-                    + 37. / 24. * &self.eps[2]
-                    - 9. / 24. * &self.eps[3]
-            }
-            _ => unreachable!(),
+        let e_t = self.exec(t, sigma as f32);
+
+        let pred_original_sample = self.seed.to_owned() - sigma as f32 * &e_t;
+        let derivative = (self.seed.to_owned() - pred_original_sample) / sigma as f32;
+        self.derivatives.push_front(derivative);
+        const ORDER: usize = 4;
+        if self.derivatives.len() > ORDER {
+            self.derivatives.pop_back();
+        }
+
+        let order = (i + 1).min(ORDER);
+        for (i, coeff) in (0..order)
+            .map(|o| self.get_lms_coefficient(order, i, o))
+            .enumerate()
+            .collect::<Vec<_>>()
+        {
+            self.seed = &self.seed + &self.derivatives[i] * (coeff as f32);
+        }
+    }
+
+    fn get_lms_coefficient(&self, order: usize, i: usize, current_order: usize) -> f64 {
+        let quad = gauss_quad::GaussLegendre::init(10);
+
+        let a = Self::sigma(&self.steps[i]);
+        let b = if i + 1 >= self.steps.len() {
+            0.0
+        } else {
+            Self::sigma(&self.steps[i + 1])
         };
-
-        let prev_over_alpha_sqrt = (t.alpha_cumprod_prev / t.alpha_cumprod).sqrt();
-        self.seed = prev_over_alpha_sqrt as f32 * &self.seed
-            + ((1. - t.alpha_cumprod_prev).sqrt()
-                - prev_over_alpha_sqrt * (1. - t.alpha_cumprod).sqrt()) as f32
-                * &e_t_prime;
+        quad.integrate(a, b, |tau: f64| -> f64 {
+            let mut prod = 1.0;
+            for k in 0..order {
+                if current_order == k {
+                    continue;
+                }
+                prod *= (tau - Self::sigma(&self.steps[i - k]))
+                    / (Self::sigma(&self.steps[i - current_order])
+                        - Self::sigma(&self.steps[i - k]))
+            }
+            prod
+        })
     }
 }

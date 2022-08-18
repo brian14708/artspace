@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use artspace_core::sampler::DdimSampler;
+use artspace_core::sampler::LmsSampler;
 use ndarray::{Axis, Slice};
 
 use crate::model_manager::ModelManager;
@@ -134,7 +134,7 @@ impl Pipeline {
         }
 
         let d = {
-            let mut d = DdimSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
+            let mut d = LmsSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
             for (i, _) in sched.iter().enumerate() {
                 progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
                 d.next(i);

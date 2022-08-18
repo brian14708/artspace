@@ -226,8 +226,6 @@ pub async fn exec() {
                 .await
                 .unwrap();
 
-            let img = p.step_post_process(&img).await.unwrap();
-
             let mut out = std::fs::File::create(output).unwrap();
             out.write_all(&p.get_png(&img)).unwrap();
         }
