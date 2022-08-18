@@ -139,7 +139,7 @@ impl<'a> PlmsSampler<'a> {
 
         let e_t_prime = match self.eps.len() {
             1 => self.eps[0].to_owned(),
-            2 => (3. / 2. * self.eps[0].to_owned() - 1. / 2. * &self.eps[1]),
+            2 => 3. / 2. * self.eps[0].to_owned() - 1. / 2. * &self.eps[1],
             3 => {
                 23. / 12. * self.eps[0].to_owned() - 16. / 12. * &self.eps[1]
                     + 5. / 12. * &self.eps[2]
