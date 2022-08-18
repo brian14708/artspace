@@ -3,6 +3,8 @@ use std::{
     iter,
 };
 
+use quad_rs::prelude::*;
+
 use crate::model::{Diffusion, DiffusionScheduleParam};
 
 pub struct DdimSampler<'a> {
@@ -126,8 +128,8 @@ impl<'a> LmsSampler<'a> {
         e_t
     }
 
-    fn sigma(t: &DiffusionScheduleParam) -> f64 {
-        ((1. - t.alpha_cumprod) / t.alpha_cumprod).sqrt()
+    fn sigma(t: &DiffusionScheduleParam) -> f32 {
+        ((1. - t.alpha_cumprod) / t.alpha_cumprod).sqrt() as f32
     }
 
     pub fn next(&mut self, i: usize) {
@@ -135,13 +137,13 @@ impl<'a> LmsSampler<'a> {
         let sigma = Self::sigma(t);
 
         if i == 0 {
-            self.seed *= sigma as f32;
+            self.seed *= sigma;
         }
 
-        let e_t = self.exec(t, sigma as f32);
+        let e_t = self.exec(t, sigma);
 
-        let pred_original_sample = self.seed.to_owned() - sigma as f32 * &e_t;
-        let derivative = (self.seed.to_owned() - pred_original_sample) / sigma as f32;
+        let pred_original_sample = self.seed.to_owned() - sigma * &e_t;
+        let derivative = (self.seed.to_owned() - pred_original_sample) / sigma;
         self.derivatives.push_front(derivative);
         const ORDER: usize = 4;
         if self.derivatives.len() > ORDER {
@@ -154,30 +156,37 @@ impl<'a> LmsSampler<'a> {
             .enumerate()
             .collect::<Vec<_>>()
         {
-            self.seed = &self.seed + &self.derivatives[i] * (coeff as f32);
+            self.seed = &self.seed + &self.derivatives[i] * coeff;
         }
     }
 
-    fn get_lms_coefficient(&self, order: usize, i: usize, current_order: usize) -> f64 {
-        let quad = gauss_quad::GaussLegendre::init(10);
-
+    fn get_lms_coefficient(&self, order: usize, i: usize, current_order: usize) -> f32 {
         let a = Self::sigma(&self.steps[i]);
         let b = if i + 1 >= self.steps.len() {
             0.0
         } else {
             Self::sigma(&self.steps[i + 1])
         };
-        quad.integrate(a, b, |tau: f64| -> f64 {
-            let mut prod = 1.0;
-            for k in 0..order {
-                if current_order == k {
-                    continue;
-                }
-                prod *= (tau - Self::sigma(&self.steps[i - k]))
-                    / (Self::sigma(&self.steps[i - current_order])
-                        - Self::sigma(&self.steps[i - k]))
-            }
-            prod
-        })
+        quad_rs::GaussKronrod::default()
+            .with_relative_tolerance(1e-4)
+            .integrate(
+                |tau: f32| -> f32 {
+                    let mut prod = 1.0;
+                    for k in 0..order {
+                        if current_order == k {
+                            continue;
+                        }
+                        prod *= (tau - Self::sigma(&self.steps[i - k]))
+                            / (Self::sigma(&self.steps[i - current_order])
+                                - Self::sigma(&self.steps[i - k]))
+                    }
+                    prod
+                },
+                a..b,
+                None,
+            )
+            .unwrap()
+            .result
+            .unwrap()
     }
 }
