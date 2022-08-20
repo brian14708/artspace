@@ -80,22 +80,29 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: aarch64-apple-darwin
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
       - run: |
-          make prepare
-          make env >> $GITHUB_ENV
-          make pre-build-macos
+          make TARGET=universal-apple-darwin prepare
+          make TARGET=universal-apple-darwin env >> $GITHUB_ENV
+          make TARGET=universal-apple-darwin pre-build-macos
       - run: make test
+      - run: |
+          mkdir -p target/release/bundle/macos
+          touch target/release/bundle/macos/ArtSpace.app.tar.gz
+
       - name: Build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target universal-apple-darwin
 
       - run: |
-          make post-build-macos
+          make TARGET=universal-apple-darwin post-build-macos
           mv ${BUILD_OUT_DIR}/bundle/macos/ArtSpace.app .
           zip -r app-macos.zip ArtSpace.app
 
