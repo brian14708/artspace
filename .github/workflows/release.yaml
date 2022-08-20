@@ -142,7 +142,7 @@ jobs:
 
       - run: |
           mkdir -p target/release/bundle/macos
-          touch target/release/bundle/macos/artspace.app.tar.gz
+          touch target/release/bundle/macos/ArtSpace.app.tar.gz
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
@@ -156,15 +156,15 @@ jobs:
 
       - run: |
           make TARGET=universal-apple-darwin post-build-macos
-          mv ${BUILD_OUT_DIR}/bundle/macos/artspace.app .
-          codesign -s - --deep -f artspace.app
-          pnpx create-dmg artspace.app  || true
-          mv *.dmg artspace_${PACKAGE_VERSION}_macOS.dmg
-          codesign -s - --deep -f artspace_${PACKAGE_VERSION}_macOS.dmg
+          mv ${BUILD_OUT_DIR}/bundle/macos/ArtSpace.app .
+          codesign -s - --deep -f ArtSpace.app
+          pnpx create-dmg ArtSpace.app  || true
+          mv *.dmg ArtSpace_${PACKAGE_VERSION}_macOS.dmg
+          codesign -s - --deep -f ArtSpace_${PACKAGE_VERSION}_macOS.dmg
 
       - uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: "artspace_${{ env.PACKAGE_VERSION }}_macOS.dmg"
+          file: "ArtSpace_${{ env.PACKAGE_VERSION }}_macOS.dmg"
           release_id: ${{ needs.create-release.outputs.release_id }}

@@ -76,9 +76,6 @@ dev: prepare
 test: prepare
 	$(VERBOSE)cargo test $(CARGO_ARGS)
 
-cli: prepare
-	$(VERBOSE)cargo run $(CARGO_ARGS) -p artspace-cli -- $(ARGS)
-
 lint: prepare
 	$(VERBOSE)pnpm recursive run check
 	$(VERBOSE)pnpm recursive run lint
@@ -114,9 +111,9 @@ post-build-windows:
 
 pre-build-macos:
 post-build-macos:
-	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
-	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime.1.12.1.dylib $(OUT_DIR)/bundle/macos/artspace.app/Contents/lib/
-	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/artspace.app/Contents/MacOS/artspace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
+	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/macos/ArtSpace.app/Contents/lib/
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime.1.12.1.dylib $(OUT_DIR)/bundle/macos/ArtSpace.app/Contents/lib/
+	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/ArtSpace.app/Contents/MacOS/ArtSpace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
 
 pre-build-linux:
 	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers

@@ -7,7 +7,7 @@
     "distDir": "../build"
   },
   "package": {
-    "productName": "artspace",
+    "productName": "ArtSpace",
     "version": "0.1.0"
   },
   "tauri": {

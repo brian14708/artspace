@@ -96,8 +96,8 @@ jobs:
 
       - run: |
           make post-build-macos
-          mv ${BUILD_OUT_DIR}/bundle/macos/artspace.app .
-          zip -r app-macos.zip artspace.app
+          mv ${BUILD_OUT_DIR}/bundle/macos/ArtSpace.app .
+          zip -r app-macos.zip ArtSpace.app
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
