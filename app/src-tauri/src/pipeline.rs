@@ -64,13 +64,37 @@ impl Pipeline {
 
                 text_embedding: None,
             })
+        } else if kind == "large" {
+            Ok(Self {
+                text_encoders: vec![TextEncoder {
+                    model: Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
+                        "clip-pos",
+                        mm.download("clip/vit-l-14.int8.tsar", &progress).await?,
+                    )?)),
+                    key: "c".to_string(),
+                }],
+                diffuse: artspace_core::model::load_diffusion(
+                    "ldm/ldm",
+                    mm.download("stable-diffusion/unet.int8.tsar", &progress)
+                        .await?,
+                )?,
+                diffuse_output_size: (512, 64),
+                autoencoder: artspace_core::model::load_auto_encoder(
+                    "ldm/vq",
+                    mm.download("stable-diffusion/vae.tsar", &progress).await?,
+                )?,
+                steps: 45,
+                sr: None,
+
+                text_embedding: None,
+            })
         } else {
             Err(anyhow::anyhow!("unknown pipeline kind: {}", kind))
         }
     }
 
     pub fn list() -> Vec<String> {
-        ["small"].iter().map(|s| s.to_string()).collect()
+        ["small", "large"].iter().map(|s| s.to_string()).collect()
     }
 
     pub async fn step_text(&mut self, s: &str) -> Result<()> {

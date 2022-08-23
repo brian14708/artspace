@@ -11,6 +11,7 @@ use crate::{
 pub struct ClipEncoder {
     tokenizer: Tokenizer,
     path: PathBuf,
+    out_idx: usize,
     session: Option<Session>,
 }
 
@@ -46,7 +47,12 @@ impl TextEncoder for ClipEncoder {
         let mut run = session.prepare();
         run.set_input("input", &enc)?;
         let out = run.exec()?;
-        let out = out.get_output_idx::<f32, ndarray::Ix2>(0)?;
+        {
+            let out = out.get_output_idx::<f32, ndarray::IxDyn>(1 - self.out_idx)?;
+            println!("{:?}", out.shape());
+        }
+        let out = out.get_output_idx::<f32, ndarray::IxDyn>(self.out_idx)?;
+        println!("{:?}", out.shape());
         Ok(out.into_dyn().to_owned())
     }
 }
@@ -58,7 +64,7 @@ impl Model for ClipEncoder {
 }
 
 impl ClipEncoder {
-    pub fn new(path: impl Into<PathBuf>) -> Result<Self> {
+    pub fn new(path: impl Into<PathBuf>, out_idx: usize) -> Result<Self> {
         let path = path.into();
         let tokenizer_json = if path.is_dir() {
             std::fs::read_to_string(path.join("tokenizer.json"))?
@@ -85,6 +91,7 @@ impl ClipEncoder {
         Ok(Self {
             tokenizer,
             path,
+            out_idx,
             session: None,
         })
     }

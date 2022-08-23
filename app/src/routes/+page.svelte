@@ -4,7 +4,7 @@
   import { invoke } from "@tauri-apps/api";
 
   onMount(async () => {
-    invoke("init", { kind: "small" }).then((response) => {
+    invoke("init", { kind: "large" }).then((response) => {
       if (response === true) {
         goto("/text");
       }

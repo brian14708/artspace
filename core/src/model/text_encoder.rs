@@ -14,7 +14,8 @@ pub fn load_text_encoder(
 ) -> Result<Box<dyn TextEncoder>> {
     match kind.as_ref() {
         "ldm/bert" => Ok(Box::new(bert::BertEncoder::new(path.as_ref())?)),
-        "clip" => Ok(Box::new(clip::ClipEncoder::new(path.as_ref())?)),
+        "clip-pos" => Ok(Box::new(clip::ClipEncoder::new(path.as_ref(), 1)?)),
+        "clip" => Ok(Box::new(clip::ClipEncoder::new(path.as_ref(), 0)?)),
         k => Err(Error::UnsupportedModel(
             "text encoder".to_string(),
             k.to_owned(),
