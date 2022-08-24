@@ -749,9 +749,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1079fb8528d9f9c888b1e8aa651e6e079ade467323d58f75faf1d30b1808f540"
+checksum = "dc948ebb96241bb40ab73effeb80d9f93afaad49359d159a5e61be51619fe813"
 dependencies = [
  "libc",
 ]
@@ -4490,7 +4490,7 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 [[package]]
 name = "tsar-rs"
 version = "0.1.0"
-source = "git+https://github.com/brian14708/tsar#6823d126c02d63eda3cbf827d7678167acce6a1f"
+source = "git+https://github.com/brian14708/tsar#7f95145a2752ad4941d13314b338ad59d7b8fec0"
 dependencies = [
  "base64",
  "half",

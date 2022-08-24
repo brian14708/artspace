@@ -69,7 +69,7 @@ impl Pipeline {
                 text_encoders: vec![TextEncoder {
                     model: Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
                         "clip-pos",
-                        mm.download("clip/vit-l-14.int8.tsar", &progress).await?,
+                        mm.download("clip/vit-l-14.tsar", &progress).await?,
                     )?)),
                     key: "c".to_string(),
                 }],

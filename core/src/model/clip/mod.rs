@@ -47,12 +47,7 @@ impl TextEncoder for ClipEncoder {
         let mut run = session.prepare();
         run.set_input("input", &enc)?;
         let out = run.exec()?;
-        {
-            let out = out.get_output_idx::<f32, ndarray::IxDyn>(1 - self.out_idx)?;
-            println!("{:?}", out.shape());
-        }
         let out = out.get_output_idx::<f32, ndarray::IxDyn>(self.out_idx)?;
-        println!("{:?}", out.shape());
         Ok(out.into_dyn().to_owned())
     }
 }
