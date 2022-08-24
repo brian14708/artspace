@@ -22,7 +22,7 @@ use crate::{
 
 pub struct Session {
     session: *mut sys::OrtSession,
-    run_option: *mut sys::OrtRunOptions,
+    use_cuda: Option<usize>,
     outputs: Vec<CString>,
 }
 
@@ -67,6 +67,8 @@ impl Session {
             })
             .unwrap();
         }
+        let mut use_cuda = None;
+
         #[cfg(all(
             target_arch = "x86_64",
             any(target_os = "linux", target_os = "windows")
@@ -81,8 +83,16 @@ impl Session {
                 ort_call!(
                     api.UpdateCUDAProviderOptions,
                     cuda_options,
-                    ["cudnn_conv_use_max_workspace\0".as_ptr() as *const _ as *const i8].as_ptr(),
-                    ["1\0".as_ptr() as *const _ as *const i8].as_ptr(),
+                    [
+                        "cudnn_conv_use_max_workspace\0".as_ptr() as *const _ as *const i8,
+                        "cudnn_conv1d_pad_to_nc1d\0".as_ptr() as *const _ as *const i8,
+                    ]
+                    .as_ptr(),
+                    [
+                        "1\0".as_ptr() as *const _ as *const i8,
+                        "1\0".as_ptr() as *const _ as *const i8,
+                    ]
+                    .as_ptr(),
                     1
                 )?;
 
@@ -91,6 +101,8 @@ impl Session {
                     session_options,
                     cuda_options,
                 );
+
+                use_cuda = Some(0);
             }
         }
 
@@ -110,7 +122,7 @@ impl Session {
 
         let mut result = Self {
             session: std::ptr::null_mut(),
-            run_option: std::ptr::null_mut(),
+            use_cuda,
             outputs: Vec::new(),
         };
 
@@ -178,8 +190,6 @@ impl Session {
                 &mut result.session,
             )?;
         }
-
-        ort_call!(api.CreateRunOptions, &mut result.run_option)?;
 
         let mut out_len = 0;
         ort_call!(api.SessionGetOutputCount, result.session, &mut out_len)?;
@@ -333,7 +343,7 @@ impl<'s> SessionRun<'s> {
         Ok(())
     }
 
-    pub fn exec(&mut self) -> Result<SessionRunResult<'_>> {
+    pub fn exec(&mut self, shrink: bool) -> Result<SessionRunResult<'_>> {
         let input_names: SmallVec<[*const i8; 4]> =
             self.inputs.iter().map(|(n, _)| n.as_ptr()).collect();
         let input_values: SmallVec<[*const sys::OrtValue; 4]> =
@@ -345,10 +355,37 @@ impl<'s> SessionRun<'s> {
         let mut outputs: SmallVec<[*mut sys::OrtValue; 4]> = SmallVec::new();
         outputs.resize(self.sess.outputs.len(), std::ptr::null_mut());
 
+        let mut run_options: *mut sys::OrtRunOptions = std::ptr::null_mut();
+        ort_call!(api.CreateRunOptions, &mut run_options)?;
+        defer!(unsafe {
+            api.ReleaseRunOptions.unwrap()(run_options);
+        });
+
+        if shrink {
+            if let Some(g) = self.sess.use_cuda {
+                let cfg = CString::new(format!("cpu:0;gpu:{}", g)).unwrap();
+                ort_call!(
+                    api.AddRunConfigEntry,
+                    run_options,
+                    ort_sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage as *const _
+                        as *const i8,
+                    cfg.as_ptr(),
+                )?;
+            } else {
+                ort_call!(
+                    api.AddRunConfigEntry,
+                    run_options,
+                    ort_sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage as *const _
+                        as *const i8,
+                    "cpu:0\0".as_ptr() as *const _ as *const i8,
+                )?;
+            }
+        }
+
         ort_call!(
             api.Run,
             self.sess.session,
-            self.sess.run_option,
+            run_options,
             input_names.as_ptr(),
             input_values.as_ptr(),
             self.inputs.len() as _,

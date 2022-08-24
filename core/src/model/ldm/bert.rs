@@ -44,7 +44,7 @@ impl TextEncoder for BertEncoder {
 
         let mut run = session.prepare();
         run.set_input("x", &enc)?;
-        let out = run.exec()?;
+        let out = run.exec(true)?;
         let out = out.get_output_idx::<f32, ndarray::Ix3>(0)?;
         Ok(out.into_dyn().to_owned())
     }

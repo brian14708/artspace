@@ -54,11 +54,11 @@
     },
     "clip/vit-l-14.int8.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/clip/vit-l-14.int8.tsar",
-      "sha256": "9469bfa827844840b790481651c5d69354e14b20294965820cd865df46e002ce"
+      "sha256": "9525474aaddd601d0eade0e4d13910c0a01a1960c29bc0b32514ca77586a2c02"
     },
     "clip/vit-l-14.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/clip/vit-l-14.tsar",
-      "sha256": "a0f51cad679f7a6c75bd90b01db06993a6814e262a02156f608ed50e3afa0041"
+      "sha256": "4e2bc437150a75ed05cf7d871036f8ec1231f37b93f006523917acd67b7f6fd7"
     },
     "swinir/realsr-m-2x.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/swinir/realsr-m-2x.tsar",

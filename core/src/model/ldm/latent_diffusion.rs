@@ -233,7 +233,7 @@ impl Diffusion for LatentDiffusion {
             }
         }
 
-        let ret = run.exec()?;
+        let ret = run.exec(t.timestep == 1)?;
         let y = ret.get_output_idx::<f32, ndarray::Ix4>(0)?;
         Ok(y.into_dyn().to_owned())
     }
