@@ -75,8 +75,13 @@ impl Pipeline {
                 }],
                 diffuse: artspace_core::model::load_diffusion(
                     "ldm/ldm",
-                    mm.download("stable-diffusion/unet.int8.tsar", &progress)
-                        .await?,
+                    if std::env::var("USE_FP16").is_ok() {
+                        mm.download("stable-diffusion/unet.fp16.tsar", &progress)
+                            .await?
+                    } else {
+                        mm.download("stable-diffusion/unet.int8.tsar", &progress)
+                            .await?
+                    },
                 )?,
                 diffuse_output_size: (512, 64),
                 autoencoder: artspace_core::model::load_auto_encoder(
