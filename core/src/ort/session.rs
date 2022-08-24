@@ -78,6 +78,14 @@ impl Session {
                     unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
                 }
 
+                ort_call!(
+                    api.UpdateCUDAProviderOptions,
+                    cuda_options,
+                    ["cudnn_conv_use_max_workspace\0".as_ptr() as *const _ as *const i8].as_ptr(),
+                    ["1\0".as_ptr() as *const _ as *const i8].as_ptr(),
+                    1
+                )?;
+
                 _ = ort_call!(
                     api.SessionOptionsAppendExecutionProvider_CUDA_V2,
                     session_options,
