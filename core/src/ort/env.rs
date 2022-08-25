@@ -26,25 +26,17 @@ lazy_static! {
 }
 
 fn init() -> AtomicPtr<sys::OrtEnv> {
-    unsafe {
-        sys::cudaStubInit();
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        const LD_LIBRARY_PATH: &str = "LD_LIBRARY_PATH";
-        const PROVIDER_PATH: &str = "/usr/share/artspace/providers";
-        match std::env::var(LD_LIBRARY_PATH) {
-            Ok(path) => std::env::set_var(LD_LIBRARY_PATH, format!("{}:{}", PROVIDER_PATH, path)),
-            Err(_) => std::env::set_var(LD_LIBRARY_PATH, PROVIDER_PATH),
-        }
-    }
-
     let api = get_api();
     let mut topt: *mut sys::OrtThreadingOptions = std::ptr::null_mut();
     ort_call!(api.CreateThreadingOptions, &mut topt).unwrap();
     defer! {
         unsafe { api.ReleaseThreadingOptions.unwrap()(topt); }
+    }
+
+    if let Ok(d) = std::env::var("ARTSPACE_NUM_THREADS") {
+        if let Ok(n) = d.parse::<i32>() {
+            ort_call!(api.SetGlobalIntraOpNumThreads, topt, n).unwrap();
+        }
     }
 
     ort_call!(api.SetGlobalDenormalAsZero, topt).unwrap();

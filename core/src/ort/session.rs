@@ -58,6 +58,18 @@ impl Session {
             sys::kOrtSessionOptionsEnableQuantQDQCleanup as *const _ as *const i8,
             "1\0".as_ptr() as *const i8,
         )?;
+        ort_call!(
+            api.AddSessionConfigEntry,
+            session_options,
+            sys::kOrtSessionOptionsConfigStrictShapeTypeInference as *const _ as *const i8,
+            "1\0".as_ptr() as *const i8,
+        )?;
+        ort_call!(
+            api.AddSessionConfigEntry,
+            session_options,
+            sys::kOrtSessionOptionsConfigDynamicBlockBase as *const _ as *const i8,
+            "4\0".as_ptr() as *const i8,
+        )?;
 
         #[cfg(target_os = "macos")]
         if std::env::var("DISABLE_COREML").is_ok() {
@@ -80,7 +92,7 @@ impl Session {
                     unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
                 }
 
-                ort_call!(
+                if let Err(e) = ort_call!(
                     api.UpdateCUDAProviderOptions,
                     cuda_options,
                     [
@@ -93,16 +105,23 @@ impl Session {
                         "1\0".as_ptr() as *const _ as *const i8,
                     ]
                     .as_ptr(),
-                    1
-                )?;
+                    2
+                ) {
+                    println!("UpdateCUDAProviderOptions failed: {:?}", e);
+                }
 
-                _ = ort_call!(
+                if let Err(e) = ort_call!(
                     api.SessionOptionsAppendExecutionProvider_CUDA_V2,
                     session_options,
                     cuda_options,
-                );
-
-                use_cuda = Some(0);
+                ) {
+                    println!(
+                        "SessionOptionsAppendExecutionProvider_CUDA_V2 failed: {:?}",
+                        e
+                    );
+                } else {
+                    use_cuda = Some(0);
+                }
             }
         }
 

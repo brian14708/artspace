@@ -59,6 +59,10 @@ pub(self) use ort_call;
 
 lazy_static! {
     static ref G_ORT: AtomicPtr<sys::OrtApi> = {
+        unsafe {
+            sys::cudaStubInit();
+        }
+
         let base: *const sys::OrtApiBase = unsafe { sys::OrtGetApiBase() };
         assert_ne!(base, std::ptr::null());
         let api = unsafe { base.as_ref().unwrap().GetApi.unwrap()(sys::ORT_API_VERSION) }

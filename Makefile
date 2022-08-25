@@ -116,6 +116,6 @@ post-build-macos:
 	$(VERBOSE)install_name_tool $(OUT_DIR)/bundle/macos/ArtSpace.app/Contents/MacOS/ArtSpace -change @rpath/libonnxruntime.1.12.1.dylib @executable_path/../lib/libonnxruntime.1.12.1.dylib
 
 pre-build-linux:
-	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
-	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime_providers_*.so $(OUT_DIR)/bundle/appimage_deb/data/usr/share/artspace/providers
+	$(VERBOSE)mkdir -p $(OUT_DIR)/bundle/appimage_deb/data/usr/lib64
+	$(VERBOSE)cp ./vendor/$(TARGET)/lib/libonnxruntime_providers_*.so $(OUT_DIR)/bundle/appimage_deb/data/usr/lib64
 post-build-linux:
