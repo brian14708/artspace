@@ -29,7 +29,7 @@ impl AutoEncoder for Vq {
             session
         } else {
             self.session
-                .insert(Session::load(&self.path, "decoder.onnx")?)
+                .insert(Session::load(&self.path, "decoder.onnx", true)?)
         };
         let x = (1. / self.metadata.scale_factor) as f32 * x;
 

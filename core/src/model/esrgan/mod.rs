@@ -17,7 +17,8 @@ impl SuperResolution for Esrgan {
         let session = if let Some(session) = &self.session {
             session
         } else {
-            self.session.insert(Session::load(&self.path, "sr.onnx")?)
+            self.session
+                .insert(Session::load(&self.path, "sr.onnx", true)?)
         };
 
         let mut run = session.prepare();

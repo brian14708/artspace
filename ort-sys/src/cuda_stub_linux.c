@@ -63,7 +63,7 @@ void cudaStubInit() {
   g_library.cudaMallocManaged = dlsym(handle, "cudaMallocManaged");
   dlerror();
 
-  if (g_library.cudaMallocManaged) {
+  if (g_library.cudaMallocManaged && getenv("ORT_FORCE_MANAGED_MEMORY") != NULL) {
     g_library.force_managed_memory = 1;
   }
 }

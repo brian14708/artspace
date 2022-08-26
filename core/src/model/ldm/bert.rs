@@ -30,7 +30,8 @@ impl TextEncoder for BertEncoder {
         let session = if let Some(session) = &self.session {
             session
         } else {
-            self.session.insert(Session::load(&self.path, "bert.onnx")?)
+            self.session
+                .insert(Session::load(&self.path, "bert.onnx", true)?)
         };
 
         let enc = ndarray::Array2::from_shape_vec(

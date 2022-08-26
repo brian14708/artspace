@@ -32,7 +32,7 @@ impl TextEncoder for ClipEncoder {
             session
         } else {
             self.session
-                .insert(Session::load(&self.path, "textual.onnx")?)
+                .insert(Session::load(&self.path, "textual.onnx", true)?)
         };
 
         let enc = ndarray::Array2::from_shape_vec(

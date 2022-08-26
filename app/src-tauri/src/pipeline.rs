@@ -78,6 +78,8 @@ impl Pipeline {
                     if std::env::var("USE_FP16").is_ok() {
                         mm.download("stable-diffusion/unet.fp16.tsar", &progress)
                             .await?
+                    } else if std::env::var("USE_FP32").is_ok() {
+                        mm.download("stable-diffusion/unet.tsar", &progress).await?
                     } else {
                         mm.download("stable-diffusion/unet.int8.tsar", &progress)
                             .await?

@@ -134,7 +134,9 @@ impl Diffusion for LatentDiffusion {
         let session = if let Some(session) = &self.session {
             session
         } else {
-            let s = self.session.insert(Session::load(&self.path, "ldm.onnx")?);
+            let s = self
+                .session
+                .insert(Session::load(&self.path, "ldm.onnx", false)?);
             self.input_types = s.inputs()?;
             s
         };

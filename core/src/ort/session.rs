@@ -32,7 +32,7 @@ pub struct TensorInfo {
 }
 
 impl Session {
-    pub fn load(base: impl AsRef<Path>, path: impl AsRef<str>) -> Result<Self> {
+    pub fn load(base: impl AsRef<Path>, path: impl AsRef<str>, cpu_only: bool) -> Result<Self> {
         let base = base.as_ref();
         let api = get_api();
         let mut session_options: *mut sys::OrtSessionOptions = std::ptr::null_mut();
@@ -71,56 +71,61 @@ impl Session {
             "4\0".as_ptr() as *const i8,
         )?;
 
-        #[cfg(target_os = "macos")]
-        if std::env::var("DISABLE_COREML").is_ok() {
-            let coreml: u32 = 0;
-            super::status(unsafe {
-                sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
-            })
-            .unwrap();
-        }
         let mut use_cuda = None;
 
-        #[cfg(all(
-            target_arch = "x86_64",
-            any(target_os = "linux", target_os = "windows")
-        ))]
-        if std::env::var("USE_CUDA").is_ok() {
-            let mut cuda_options: *mut sys::OrtCUDAProviderOptionsV2 = std::ptr::null_mut();
-            if ort_call!(api.CreateCUDAProviderOptions, &mut cuda_options).is_ok() {
-                defer! {
-                    unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
-                }
+        if !cpu_only {
+            #[cfg(target_os = "macos")]
+            if std::env::var("DISABLE_COREML").is_ok() {
+                let coreml: u32 = 0;
+                super::status(unsafe {
+                    sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
+                })
+                .unwrap();
+            }
 
-                if let Err(e) = ort_call!(
-                    api.UpdateCUDAProviderOptions,
-                    cuda_options,
-                    [
-                        "cudnn_conv_use_max_workspace\0".as_ptr() as *const _ as *const i8,
-                        "cudnn_conv1d_pad_to_nc1d\0".as_ptr() as *const _ as *const i8,
-                    ]
-                    .as_ptr(),
-                    [
-                        "1\0".as_ptr() as *const _ as *const i8,
-                        "1\0".as_ptr() as *const _ as *const i8,
-                    ]
-                    .as_ptr(),
-                    2
-                ) {
-                    println!("UpdateCUDAProviderOptions failed: {:?}", e);
-                }
+            #[cfg(all(
+                target_arch = "x86_64",
+                any(target_os = "linux", target_os = "windows")
+            ))]
+            if std::env::var("USE_CUDA").is_ok() {
+                let mut cuda_options: *mut sys::OrtCUDAProviderOptionsV2 = std::ptr::null_mut();
+                if ort_call!(api.CreateCUDAProviderOptions, &mut cuda_options).is_ok() {
+                    defer! {
+                        unsafe { api.ReleaseCUDAProviderOptions.unwrap()(cuda_options); }
+                    }
 
-                if let Err(e) = ort_call!(
-                    api.SessionOptionsAppendExecutionProvider_CUDA_V2,
-                    session_options,
-                    cuda_options,
-                ) {
-                    println!(
-                        "SessionOptionsAppendExecutionProvider_CUDA_V2 failed: {:?}",
-                        e
-                    );
-                } else {
-                    use_cuda = Some(0);
+                    if let Err(e) = ort_call!(
+                        api.UpdateCUDAProviderOptions,
+                        cuda_options,
+                        [
+                            "arena_extend_strategy\0".as_ptr() as *const i8,
+                            "cudnn_conv_use_max_workspace\0".as_ptr() as *const i8,
+                            "cudnn_conv1d_pad_to_nc1d\0".as_ptr() as *const i8,
+                        ]
+                        .as_ptr(),
+                        [
+                            "kSameAsRequested\0".as_ptr() as *const i8,
+                            "1\0".as_ptr() as *const i8,
+                            "1\0".as_ptr() as *const i8,
+                        ]
+                        .as_ptr(),
+                        3
+                    ) {
+                        println!("UpdateCUDAProviderOptions failed: {:?}", e);
+                    }
+
+                    if let Err(e) = ort_call!(
+                        api.SessionOptionsAppendExecutionProvider_CUDA_V2,
+                        session_options,
+                        cuda_options,
+                    ) {
+                        println!(
+                            "SessionOptionsAppendExecutionProvider_CUDA_V2 failed: {:?}",
+                            e
+                        );
+                    } else {
+                        use_cuda = Some(0);
+                    }
                 }
             }
         }
@@ -348,7 +353,7 @@ impl<'s> SessionRun<'s> {
             get_cpu_mem_info(),
             data.as_ptr() as *mut _,
             (data.raw_dim().size() * std::mem::size_of::<S::Elem>()) as _,
-            shape.as_ptr() as *const _,
+            shape.as_ptr(),
             shape.len() as _,
             S::Elem::as_onnx_data_type(),
             &mut blob
@@ -396,7 +401,7 @@ impl<'s> SessionRun<'s> {
                     run_options,
                     ort_sys::kOrtRunOptionsConfigEnableMemoryArenaShrinkage as *const _
                         as *const i8,
-                    "cpu:0\0".as_ptr() as *const _ as *const i8,
+                    "cpu:0\0".as_ptr() as *const i8,
                 )?;
             }
         }

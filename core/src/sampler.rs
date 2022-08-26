@@ -111,21 +111,58 @@ impl<'a> LmsSampler<'a> {
     }
 
     fn exec(&mut self, t: &DiffusionScheduleParam, sigma: f32) -> ndarray::ArrayD<f32> {
-        let mut seed =
-            ndarray::concatenate(ndarray::Axis(0), &[self.seed.view(), self.seed.view()]).unwrap();
-        seed /= (sigma.powi(2) + 1.).sqrt();
         let batch = self.seed.shape()[0];
-        let seed = self.model.execute(&seed, t, &self.c).unwrap();
         let mut e_t = ndarray::ArrayD::<f32>::zeros(self.seed.shape());
-        for i in 0..batch {
-            e_t.index_axis_mut(ndarray::Axis(0), i).assign(
-                &(seed.index_axis(ndarray::Axis(0), i + batch).to_owned()
-                    + (seed.index_axis(ndarray::Axis(0), i).to_owned()
-                        - seed.index_axis(ndarray::Axis(0), i + batch))
-                        * 7.),
-            );
+
+        if std::env::var("LOW_MEM").is_ok() {
+            for i in 0..batch {
+                let s = self
+                    .seed
+                    .index_axis(ndarray::Axis(0), i)
+                    .insert_axis(ndarray::Axis(0))
+                    .to_owned()
+                    / (sigma.powi(2) + 1.).sqrt();
+                let mut c = HashMap::new();
+                for (k, v) in self.c.iter() {
+                    c.insert(
+                        k.to_owned(),
+                        v.index_axis(ndarray::Axis(0), i)
+                            .insert_axis(ndarray::Axis(0))
+                            .to_owned(),
+                    );
+                }
+                let vi = self.model.execute(&s, t, &c).unwrap();
+
+                for (k, v) in self.c.iter() {
+                    c.insert(
+                        k.to_owned(),
+                        v.index_axis(ndarray::Axis(0), i + batch)
+                            .insert_axis(ndarray::Axis(0))
+                            .to_owned(),
+                    );
+                }
+                let vib = self.model.execute(&s, t, &c).unwrap();
+
+                e_t.index_axis_mut(ndarray::Axis(0), i)
+                    .assign(&(vib.to_owned() + (vi - vib) * 7.5).index_axis(ndarray::Axis(0), 0));
+            }
+            e_t
+        } else {
+            let mut seed =
+                ndarray::concatenate(ndarray::Axis(0), &[self.seed.view(), self.seed.view()])
+                    .unwrap();
+            seed /= (sigma.powi(2) + 1.).sqrt();
+            let seed = self.model.execute(&seed, t, &self.c).unwrap();
+            for i in 0..batch {
+                e_t.index_axis_mut(ndarray::Axis(0), i).assign(
+                    &(seed.index_axis(ndarray::Axis(0), i + batch).to_owned()
+                        + (seed.index_axis(ndarray::Axis(0), i).to_owned()
+                            - seed.index_axis(ndarray::Axis(0), i + batch))
+                            * 7.5),
+                );
+            }
+            e_t
         }
-        e_t
     }
 
     fn sigma(t: &DiffusionScheduleParam) -> f32 {
