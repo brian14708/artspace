@@ -2,7 +2,7 @@
   "models": {
     "stable-diffusion/unet.fp16.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/stable-diffusion/unet.fp16.tsar",
-      "sha256": "0b77907ef861c8f5213c506f2daaf50e9990d56d3d0638027cd035408afe3702"
+      "sha256": "f40585c1917cf6f4559f96531a51b9909c810cc160b3171eeb06d9d523486a86"
     },
     "stable-diffusion/unet.int8.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/stable-diffusion/unet.int8.tsar",
