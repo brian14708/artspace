@@ -44,6 +44,10 @@
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/glid-3-xl/ldm.tsar",
       "sha256": "cf39d311b024e2bd092e4df25561ca8f328fd106624e18c22ed237765ab7757e"
     },
+    "ldm/glid-3-xl/ldm.fp16.tsar": {
+      "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/ldm/glid-3-xl/ldm.fp16.tsar",
+      "sha256": "3c4eacbe6f807a836fbccfdf8cbbf40e50c72f27c9d4ce1448141714d2da4c7e"
+    },
     "esrgan/x2plus.tsar": {
       "url": "https://huggingface.co/brian14708/artspace-models/resolve/main/esrgan/x2plus.tsar",
       "sha256": "f5b15d23889b1ce049bc909d04448af1669e53079d91ac3b16c0de9f0795f239"

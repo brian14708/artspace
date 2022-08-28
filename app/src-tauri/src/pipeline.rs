@@ -33,7 +33,7 @@ impl Pipeline {
                     TextEncoder {
                         model: Arc::new(Mutex::new(artspace_core::model::load_text_encoder(
                             "clip",
-                            mm.download("clip/vit-l-14.int8.tsar", &progress).await?,
+                            mm.download("clip/vit-l-14.tsar", &progress).await?,
                         )?)),
                         key: "clip".to_string(),
                     },
@@ -48,8 +48,13 @@ impl Pipeline {
                 ],
                 diffuse: artspace_core::model::load_diffusion(
                     "ldm/ldm",
-                    mm.download("ldm/glid-3-xl/ldm.int8.tsar", &progress)
-                        .await?,
+                    if std::env::var("USE_FP16").is_ok() {
+                        mm.download("ldm/glid-3-xl/ldm.fp16.tsar", &progress)
+                            .await?
+                    } else {
+                        mm.download("ldm/glid-3-xl/ldm.int8.tsar", &progress)
+                            .await?
+                    },
                 )?,
                 diffuse_output_size: (256, 32),
                 autoencoder: artspace_core::model::load_auto_encoder(
@@ -78,8 +83,6 @@ impl Pipeline {
                     if std::env::var("USE_FP16").is_ok() {
                         mm.download("stable-diffusion/unet.fp16.tsar", &progress)
                             .await?
-                    } else if std::env::var("USE_FP32").is_ok() {
-                        mm.download("stable-diffusion/unet.tsar", &progress).await?
                     } else {
                         mm.download("stable-diffusion/unet.int8.tsar", &progress)
                             .await?
