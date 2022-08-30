@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use async_std::task;
+use rayon::prelude::*;
 use serde::Deserialize;
 
 pub struct ModelManager {
@@ -130,11 +130,11 @@ impl ModelManager {
             }
 
             let lk = std::sync::Arc::new(std::sync::Mutex::new(()));
-            let handles = blobs.into_iter().flat_map(|mut b| {
+            blobs.into_par_iter().for_each(|mut b| {
                 if let Some((target_file, offset)) = b.target_file() {
                     let outpath = temp_extract.path().join(target_file);
                     let lk = lk.clone();
-                    Some(task::spawn_blocking(move || {
+                    {
                         let mut dst = std::fs::OpenOptions::new()
                             .write(true)
                             .open(outpath)
@@ -153,12 +153,9 @@ impl ModelManager {
                                 }
                             }
                         }
-                    }))
-                } else {
-                    None
+                    }
                 }
             });
-            futures::future::join_all(handles).await;
         }
 
         async_std::fs::rename(temp_extract.path(), &path).await?;

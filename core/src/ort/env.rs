@@ -45,7 +45,11 @@ fn init() -> AtomicPtr<sys::OrtEnv> {
     let mut env: *mut sys::OrtEnv = std::ptr::null_mut();
     ort_call!(
         api.CreateEnvWithGlobalThreadPools,
-        sys::OrtLoggingLevel_ORT_LOGGING_LEVEL_WARNING,
+        if std::env::var("ARTSPACE_VERBOSE").is_ok() {
+            sys::OrtLoggingLevel_ORT_LOGGING_LEVEL_VERBOSE
+        } else {
+            sys::OrtLoggingLevel_ORT_LOGGING_LEVEL_WARNING
+        },
         lid.as_ptr(),
         topt,
         &mut env,

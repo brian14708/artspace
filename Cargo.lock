@@ -75,6 +75,7 @@ dependencies = [
  "ndarray",
  "ndarray-npy",
  "png 0.17.5",
+ "rayon",
  "reqwest",
  "serde",
  "serde_json",

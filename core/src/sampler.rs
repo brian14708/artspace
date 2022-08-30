@@ -114,7 +114,7 @@ impl<'a> LmsSampler<'a> {
         let batch = self.seed.shape()[0];
         let mut e_t = ndarray::ArrayD::<f32>::zeros(self.seed.shape());
 
-        if std::env::var("LOW_MEM").is_ok() {
+        if true {
             for i in 0..batch {
                 let s = self
                     .seed

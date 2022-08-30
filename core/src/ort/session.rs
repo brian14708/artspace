@@ -71,16 +71,18 @@ impl Session {
             "4\0".as_ptr() as *const i8,
         )?;
 
-        let mut use_cuda = None;
+        #[cfg(target_os = "macos")]
+        if !std::env::var("DISABLE_COREML").is_ok() {
+            let coreml: u32 = 0;
+            super::status(unsafe {
+                sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
+            })
+            .unwrap();
+        }
 
-        if !cpu_only {
-            #[cfg(target_os = "macos")]
-            if std::env::var("DISABLE_COREML").is_ok() {
-                let coreml: u32 = 0;
-                super::status(unsafe {
-                    sys::OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, coreml)
-                })
-                .unwrap();
+        let use_cuda = || -> Option<usize> {
+            if cpu_only {
+                return None;
             }
 
             #[cfg(all(
@@ -124,11 +126,12 @@ impl Session {
                             e
                         );
                     } else {
-                        use_cuda = Some(0);
+                        return Some(0);
                     }
                 }
             }
-        }
+            None
+        }();
 
         struct OrtWeight {
             name: CString,
