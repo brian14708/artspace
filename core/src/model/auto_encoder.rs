@@ -4,6 +4,7 @@ use super::{ldm::vq, Model};
 use crate::result::{Error, Result};
 
 pub trait AutoEncoder: Model {
+    fn encode(&mut self, x: &ndarray::ArrayD<f32>) -> Result<ndarray::ArrayD<f32>>;
     fn decode(&mut self, x: &ndarray::ArrayD<f32>) -> Result<ndarray::ArrayD<f32>>;
 }
 

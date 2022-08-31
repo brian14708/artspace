@@ -7,6 +7,7 @@ use std::{
 use artspace_core::sampler::DdimSampler;
 use clap::{Parser, Subcommand};
 use ndarray::{Axis, Slice};
+use nshare::ToNdarray3;
 use tauri::api::path;
 
 use crate::{model_manager::ModelManager, pipeline::Pipeline};
@@ -66,6 +67,12 @@ enum Commands {
         width: Option<f32>,
         #[clap(long)]
         height: Option<f32>,
+    },
+    AutoEncoder {
+        kind: String,
+        path: PathBuf,
+        input: PathBuf,
+        output: PathBuf,
     },
 }
 
@@ -201,6 +208,44 @@ pub async fn exec() {
                 }
             }
         }
+        Some(Commands::AutoEncoder {
+            kind,
+            path,
+            input,
+            output,
+        }) => {
+            let img = image::io::Reader::open(input)
+                .unwrap()
+                .decode()
+                .unwrap()
+                .into_rgb8();
+            let w = img.width();
+            let h = img.height();
+            let scale = 512. / w.min(h) as f32;
+            let w = (scale * w as f32).round() as u32;
+            let h = (scale * h as f32).round() as u32;
+            let mut img =
+                image::imageops::resize(&img, w, h, image::imageops::FilterType::CatmullRom);
+
+            let nw = w / 64 * 64;
+            let nh = h / 64 * 64;
+            let img = image::imageops::crop(&mut img, (w - nw) / 2, (h - nh) / 2, nw, nh)
+                .to_image()
+                .into_ndarray3()
+                .insert_axis(ndarray::Axis(0))
+                .mapv(|x| f32::from(x) / 255.)
+                .as_standard_layout()
+                .to_owned()
+                .into_dyn();
+
+            let mut ae = artspace_core::model::load_auto_encoder(kind, path).unwrap();
+
+            let e = ae.encode(&img).unwrap();
+            let img = ae.decode(&e).unwrap();
+
+            let mut out = std::fs::File::create(output).unwrap();
+            out.write_all(&Pipeline::get_png(&img)).unwrap();
+        }
         Some(Commands::Pipeline {
             kind,
             text,
@@ -227,7 +272,7 @@ pub async fn exec() {
                 .unwrap();
 
             let mut out = std::fs::File::create(output).unwrap();
-            out.write_all(&p.get_png(&img)).unwrap();
+            out.write_all(&Pipeline::get_png(&img)).unwrap();
         }
         None => return,
     }

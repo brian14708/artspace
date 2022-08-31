@@ -81,7 +81,7 @@ async fn step_text(text: String) -> Option<bool> {
 async fn step_diffuse(w: f32, h: f32, idx: usize) -> Option<Vec<u8>> {
     let mut p = PIPELINE.lock().await;
     let img = set_error(p.as_mut().unwrap().step_diffuse(w, h, log).await)?;
-    let png = p.as_ref().unwrap().get_png(&img);
+    let png = Pipeline::get_png(&img);
     let mut result = RESULTS.lock().await;
     if result.len() <= idx {
         result.resize(idx + 1, ndarray::ArrayD::zeros(ndarray::IxDyn(&[])));
@@ -104,7 +104,7 @@ async fn step_post(idx: usize, path: String) -> Option<()> {
 
     log("Saving image...");
     let mut out = std::fs::File::create(PathBuf::from(path)).unwrap();
-    set_error(out.write_all(&p.as_ref().unwrap().get_png(&img)))?;
+    set_error(out.write_all(&Pipeline::get_png(&img)))?;
     Some(())
 }
 

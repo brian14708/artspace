@@ -1,5 +1,7 @@
 use std::{io::Read, path::PathBuf};
 
+use ndarray::Array;
+use ndarray_rand::{rand_distr::Normal, RandomExt};
 use serde::Deserialize;
 
 use crate::{
@@ -11,7 +13,8 @@ use crate::{
 pub struct Vq {
     metadata: Metadata,
     path: PathBuf,
-    session: Option<Session>,
+    encoder_session: Option<Session>,
+    decoder_session: Option<Session>,
 }
 
 #[derive(Deserialize)]
@@ -20,15 +23,37 @@ struct Metadata {
 }
 
 impl AutoEncoder for Vq {
+    fn encode(&mut self, x: &ndarray::ArrayD<f32>) -> Result<ndarray::ArrayD<f32>> {
+        if x.is_empty() {
+            return Ok(ndarray::ArrayD::zeros([].as_slice()));
+        }
+
+        let session = if let Some(session) = &self.encoder_session {
+            session
+        } else {
+            self.encoder_session
+                .insert(Session::load(&self.path, "encoder.onnx", true)?)
+        };
+        let x = x * 2.0 - 1.0;
+
+        let mut run = session.prepare();
+        run.set_input("img", &x)?;
+        let out = run.exec(true)?;
+        let out = out.get_output_idx::<f32, ndarray::Ix4>(0)?;
+        let ch = out.shape()[1];
+        let mean = out.slice_axis(ndarray::Axis(1), ndarray::Slice::from(0..ch / 2));
+        Ok(mean.to_owned().into_dyn() * self.metadata.scale_factor as f32)
+    }
+
     fn decode(&mut self, x: &ndarray::ArrayD<f32>) -> Result<ndarray::ArrayD<f32>> {
         if x.is_empty() {
             return Ok(ndarray::ArrayD::zeros([].as_slice()));
         }
 
-        let session = if let Some(session) = &self.session {
+        let session = if let Some(session) = &self.decoder_session {
             session
         } else {
-            self.session
+            self.decoder_session
                 .insert(Session::load(&self.path, "decoder.onnx", true)?)
         };
         let x = (1. / self.metadata.scale_factor) as f32 * x;
@@ -44,7 +69,8 @@ impl AutoEncoder for Vq {
 
 impl Model for Vq {
     fn unload_model(&mut self) {
-        self.session = None;
+        self.encoder_session = None;
+        self.decoder_session = None;
     }
 }
 
@@ -65,7 +91,8 @@ impl Vq {
         Ok(Self {
             metadata,
             path,
-            session: None,
+            encoder_session: None,
+            decoder_session: None,
         })
     }
 }

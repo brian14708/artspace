@@ -194,7 +194,7 @@ impl Pipeline {
         })
     }
 
-    pub fn get_png(&self, image: &ndarray::ArrayD<f32>) -> Vec<u8> {
+    pub fn get_png(image: &ndarray::ArrayD<f32>) -> Vec<u8> {
         let image = image
             .mapv(|f| (f * 255.0) as u8)
             .permuted_axes([0, 2, 3, 1].as_slice());
