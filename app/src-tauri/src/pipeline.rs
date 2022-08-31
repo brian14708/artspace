@@ -1,11 +1,13 @@
 use std::{
     collections::HashMap,
+    path::Path,
     sync::{Arc, Mutex},
 };
 
 use anyhow::Result;
-use artspace_core::sampler::LmsSampler;
+use artspace_core::sampler::{DdimSampler, LmsSampler};
 use ndarray::{Axis, Slice};
+use nshare::ToNdarray3;
 
 use crate::model_manager::ModelManager;
 
@@ -130,6 +132,7 @@ impl Pipeline {
         &mut self,
         w: f32,
         h: f32,
+        seed: Option<(ndarray::ArrayD<f32>, f32)>,
         progress: impl Fn(String),
     ) -> Result<ndarray::ArrayD<f32>> {
         self.text_encoders
@@ -138,16 +141,35 @@ impl Pipeline {
 
         let min = w.min(h);
 
-        let noise = self.diffuse.make_noise(
-            1,
-            (w / min * self.diffuse_output_size.0 as f32).round() as usize
-                / self.diffuse_output_size.1
-                * self.diffuse_output_size.1,
-            (h / min * self.diffuse_output_size.0 as f32).round() as usize
-                / self.diffuse_output_size.1
-                * self.diffuse_output_size.1,
-        );
-        let sched = self.diffuse.make_schedule(self.steps);
+        let (noise, sched, ddim) = if let Some((seed, strength)) = seed {
+            let sched = self.diffuse.make_schedule(self.steps);
+            let init_t = ((sched.len() - 1) as f32 * strength) as usize;
+            let sched = sched.into_iter().skip(init_t).collect::<Vec<_>>();
+            let sqrt_alphas_cumprod = sched[0].alpha_cumprod.sqrt() as f32;
+            let sqrt_one_minus_alphas_cumprod = (1.0 - sched[0].alpha_cumprod).sqrt() as f32;
+            let seed_shape = seed.shape();
+
+            progress("Encoding seed...".to_string());
+            let img = self.autoencoder.encode(&seed)?;
+            progress("Encoding seed done".to_string());
+            let noise = self.diffuse.make_noise(1, seed_shape[3], seed_shape[2]);
+            let noise = noise * sqrt_one_minus_alphas_cumprod + img * sqrt_alphas_cumprod;
+            (noise.to_owned(), sched, true)
+        } else {
+            (
+                self.diffuse.make_noise(
+                    1,
+                    (w / min * self.diffuse_output_size.0 as f32).round() as usize
+                        / self.diffuse_output_size.1
+                        * self.diffuse_output_size.1,
+                    (h / min * self.diffuse_output_size.0 as f32).round() as usize
+                        / self.diffuse_output_size.1
+                        * self.diffuse_output_size.1,
+                ),
+                self.diffuse.make_schedule(self.steps),
+                false,
+            )
+        };
 
         let mut cond = HashMap::<String, ndarray::ArrayD<f32>>::new();
         let mut uncond = HashMap::<String, ndarray::ArrayD<f32>>::new();
@@ -168,12 +190,21 @@ impl Pipeline {
         }
 
         let d = {
-            let mut d = LmsSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
-            for (i, _) in sched.iter().enumerate() {
-                progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
-                d.next(i);
+            if ddim {
+                let mut d = DdimSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
+                for (i, _) in sched.iter().enumerate() {
+                    progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
+                    d.next(i);
+                }
+                d.seed
+            } else {
+                let mut d = LmsSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
+                for (i, _) in sched.iter().enumerate() {
+                    progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
+                    d.next(i);
+                }
+                d.seed
             }
-            d.seed
         };
 
         progress("Decoding image...".to_string());
@@ -192,6 +223,30 @@ impl Pipeline {
         } else {
             image.to_owned()
         })
+    }
+
+    pub fn open_seed(&self, p: impl AsRef<Path>) -> Result<ndarray::ArrayD<f32>> {
+        let img = image::io::Reader::open(p)?.decode()?.into_rgb8();
+        let w = img.width();
+        let h = img.height();
+        let scale = self.diffuse_output_size.0 as f32 / w.min(h) as f32;
+        let w = (scale * w as f32).round() as u32;
+        let h = (scale * h as f32).round() as u32;
+        let mut img = image::imageops::resize(&img, w, h, image::imageops::FilterType::CatmullRom);
+
+        let align = self.diffuse_output_size.0 as u32;
+        let nw = w / align * align;
+        let nh = h / align * align;
+        Ok(
+            image::imageops::crop(&mut img, (w - nw) / 2, (h - nh) / 2, nw, nh)
+                .to_image()
+                .into_ndarray3()
+                .insert_axis(ndarray::Axis(0))
+                .mapv(|x| f32::from(x) / 255.)
+                .as_standard_layout()
+                .to_owned()
+                .into_dyn(),
+        )
     }
 
     pub fn get_png(image: &ndarray::ArrayD<f32>) -> Vec<u8> {

@@ -25,6 +25,14 @@ lazy_static! {
     };
 }
 
+pub fn deinit() {
+    let env = G_ENV.load(Ordering::Relaxed);
+    if !env.is_null() {
+        unsafe { get_api().ReleaseEnv.unwrap()(env) };
+        G_ENV.store(std::ptr::null_mut(), Ordering::Relaxed);
+    }
+}
+
 fn init() -> AtomicPtr<sys::OrtEnv> {
     let api = get_api();
     let mut topt: *mut sys::OrtThreadingOptions = std::ptr::null_mut();

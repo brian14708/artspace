@@ -67,6 +67,11 @@ enum Commands {
         width: Option<f32>,
         #[clap(long)]
         height: Option<f32>,
+
+        #[clap(long)]
+        seed: Option<PathBuf>,
+        #[clap(long)]
+        seed_strength: Option<f32>,
     },
     AutoEncoder {
         kind: String,
@@ -76,7 +81,7 @@ enum Commands {
     },
 }
 
-pub async fn exec() {
+pub async fn exec() -> bool {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::TextEncode {
@@ -252,6 +257,9 @@ pub async fn exec() {
             output,
             width,
             height,
+
+            seed,
+            seed_strength,
         }) => {
             let mm = ModelManager::new(
                 path::data_dir()
@@ -264,8 +272,13 @@ pub async fn exec() {
                 .await
                 .unwrap();
             p.step_text(text).await.unwrap();
+
+            let seed = seed
+                .as_ref()
+                .map(|f| (p.open_seed(f).unwrap(), seed_strength.unwrap_or(0.5)));
+
             let img = p
-                .step_diffuse(width.unwrap_or(1.), height.unwrap_or(1.), |p| {
+                .step_diffuse(width.unwrap_or(1.), height.unwrap_or(1.), seed, |p| {
                     println!("{}", p)
                 })
                 .await
@@ -274,7 +287,8 @@ pub async fn exec() {
             let mut out = std::fs::File::create(output).unwrap();
             out.write_all(&Pipeline::get_png(&img)).unwrap();
         }
-        None => return,
+        None => return false,
     }
-    std::process::exit(0)
+
+    true
 }

@@ -121,6 +121,10 @@ impl Diffusion for LatentDiffusion {
         .into_dyn()
     }
 
+    fn image_scale(&self) -> usize {
+        self.metadata.image_scale.unwrap_or(8)
+    }
+
     fn execute(
         &mut self,
         x: &ndarray::ArrayD<f32>,

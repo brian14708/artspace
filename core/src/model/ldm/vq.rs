@@ -1,7 +1,5 @@
 use std::{io::Read, path::PathBuf};
 
-use ndarray::Array;
-use ndarray_rand::{rand_distr::Normal, RandomExt};
 use serde::Deserialize;
 
 use crate::{

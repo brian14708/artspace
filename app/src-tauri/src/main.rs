@@ -5,6 +5,7 @@
 
 use std::{io::Write, sync::Mutex};
 
+use artspace_core::ort;
 use async_std::path::PathBuf;
 use lazy_static::lazy_static;
 use tauri::api::path;
@@ -80,7 +81,7 @@ async fn step_text(text: String) -> Option<bool> {
 #[tauri::command]
 async fn step_diffuse(w: f32, h: f32, idx: usize) -> Option<Vec<u8>> {
     let mut p = PIPELINE.lock().await;
-    let img = set_error(p.as_mut().unwrap().step_diffuse(w, h, log).await)?;
+    let img = set_error(p.as_mut().unwrap().step_diffuse(w, h, None, log).await)?;
     let png = Pipeline::get_png(&img);
     let mut result = RESULTS.lock().await;
     if result.len() <= idx {
@@ -114,18 +115,21 @@ fn log(s: impl Into<String>) {
 
 #[tokio::main]
 async fn main() {
-    cli::exec().await;
-
-    #[allow(unused_imports)]
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            list_pipeline,
-            get_status,
-            init,
-            step_text,
-            step_diffuse,
-            step_post
-        ])
-        .run(tauri::tauri_build_context!())
-        .expect("error while running tauri application");
+    if cli::exec().await {
+        ort::deinit();
+    } else {
+        #[allow(unused_imports)]
+        tauri::Builder::default()
+            .invoke_handler(tauri::generate_handler![
+                list_pipeline,
+                get_status,
+                init,
+                step_text,
+                step_diffuse,
+                step_post
+            ])
+            .run(tauri::tauri_build_context!())
+            .expect("error while running tauri application");
+    }
+    ort::deinit();
 }

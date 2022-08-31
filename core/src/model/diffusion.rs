@@ -14,6 +14,7 @@ pub struct DiffusionScheduleParam {
 pub trait Diffusion: Model {
     fn make_schedule(&self, num_steps: usize) -> Vec<DiffusionScheduleParam>;
     fn make_noise(&self, b: usize, w: usize, h: usize) -> ndarray::ArrayD<f32>;
+    fn image_scale(&self) -> usize;
     fn execute(
         &mut self,
         x: &ndarray::ArrayD<f32>,
