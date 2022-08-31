@@ -8,7 +8,7 @@ importers:
   app:
     specifiers:
       '@sveltejs/adapter-static': 1.0.0-next.40
-      '@sveltejs/kit': 1.0.0-next.454
+      '@sveltejs/kit': 1.0.0-next.456
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.36.1
@@ -30,7 +30,7 @@ importers:
       vite: 3.1.0-beta.1
     devDependencies:
       '@sveltejs/adapter-static': 1.0.0-next.40
-      '@sveltejs/kit': 1.0.0-next.454_fhgkwirxvgjw2igda6zmhiisma
+      '@sveltejs/kit': 1.0.0-next.456_fhgkwirxvgjw2igda6zmhiisma
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.36.1_lbwfnm54o3pmr3ypeqp3btnera
@@ -156,8 +156,8 @@ packages:
     resolution: {integrity: sha512-Yli+dNa2xSsE3Cbh99l8ez76xReAEdpRN3quphl9BHpwf5ZyI4HL8D7vTHQ+xYQVbDoLEcW3Z4Os2F7UIUQCng==}
     dev: true
 
-  /@sveltejs/kit/1.0.0-next.454_fhgkwirxvgjw2igda6zmhiisma:
-    resolution: {integrity: sha512-Adbd837/E8B8TPVPlQZT4R0o3NekmtyUEYnI46M/YupMtg1NnaVdLF8Na6xoivtnIY7dP5H10zGJhGsTon3fPQ==}
+  /@sveltejs/kit/1.0.0-next.456_fhgkwirxvgjw2igda6zmhiisma:
+    resolution: {integrity: sha512-yzYoRtRPqVTcIehfxXptZzH5bDN/19cqTrrJ1KM0Ju5BrpRsRvqLYlZBYBaDv0bx1MdfJkUJlPVchLbS6bsRXw==}
     engines: {node: '>=16.14'}
     hasBin: true
     requiresBuild: true
@@ -165,7 +165,7 @@ packages:
       svelte: ^3.44.0
       vite: ^3.1.0-beta.1
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 1.0.2_fhgkwirxvgjw2igda6zmhiisma
+      '@sveltejs/vite-plugin-svelte': 1.0.3_fhgkwirxvgjw2igda6zmhiisma
       cookie: 0.5.0
       devalue: 3.1.2
       kleur: 4.1.5
@@ -184,8 +184,8 @@ packages:
       - supports-color
     dev: true
 
-  /@sveltejs/vite-plugin-svelte/1.0.2_fhgkwirxvgjw2igda6zmhiisma:
-    resolution: {integrity: sha512-8tTVbNuraeDchBaArNbwaZLpO0feM7BRSdZU5yeM4Clasx2p1p1CYBoWh+VgxZlxiark49HXummkHqKztbl8lA==}
+  /@sveltejs/vite-plugin-svelte/1.0.3_fhgkwirxvgjw2igda6zmhiisma:
+    resolution: {integrity: sha512-0Qu51m2W9RBlxWPp8i31KJpnqmjWMOne8vAzgmOX6ZM9uX+/RAv6BNhEMcNoP5MsyLjyW1ZTCiJoaZZ5EeqpFg==}
     engines: {node: ^14.18.0 || >= 16}
     peerDependencies:
       diff-match-patch: ^1.0.5
