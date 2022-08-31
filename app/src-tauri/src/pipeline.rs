@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use artspace_core::sampler::{DdimSampler, LmsSampler};
+use artspace_core::sampler::LmsSampler;
 use ndarray::{Axis, Slice};
 use nshare::ToNdarray3;
 
@@ -141,20 +141,17 @@ impl Pipeline {
 
         let min = w.min(h);
 
-        let (noise, sched, ddim) = if let Some((seed, strength)) = seed {
+        let (noise, sched) = if let Some((seed, strength)) = seed {
             let sched = self.diffuse.make_schedule(self.steps);
             let init_t = ((sched.len() - 1) as f32 * strength) as usize;
             let sched = sched.into_iter().skip(init_t).collect::<Vec<_>>();
-            let sqrt_alphas_cumprod = sched[0].alpha_cumprod.sqrt() as f32;
-            let sqrt_one_minus_alphas_cumprod = (1.0 - sched[0].alpha_cumprod).sqrt() as f32;
             let seed_shape = seed.shape();
 
             progress("Encoding seed...".to_string());
             let img = self.autoencoder.encode(&seed)?;
             progress("Encoding seed done".to_string());
             let noise = self.diffuse.make_noise(1, seed_shape[3], seed_shape[2]);
-            let noise = noise * sqrt_one_minus_alphas_cumprod + img * sqrt_alphas_cumprod;
-            (noise.to_owned(), sched, true)
+            (LmsSampler::add_noise(&sched[0], &img, &noise), sched)
         } else {
             (
                 self.diffuse.make_noise(
@@ -167,7 +164,6 @@ impl Pipeline {
                         * self.diffuse_output_size.1,
                 ),
                 self.diffuse.make_schedule(self.steps),
-                false,
             )
         };
 
@@ -190,21 +186,12 @@ impl Pipeline {
         }
 
         let d = {
-            if ddim {
-                let mut d = DdimSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
-                for (i, _) in sched.iter().enumerate() {
-                    progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
-                    d.next(i);
-                }
-                d.seed
-            } else {
-                let mut d = LmsSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
-                for (i, _) in sched.iter().enumerate() {
-                    progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
-                    d.next(i);
-                }
-                d.seed
+            let mut d = LmsSampler::new(self.diffuse.as_mut(), &sched, cond, uncond, noise);
+            for (i, _) in sched.iter().enumerate() {
+                progress(format!("Diffusion step {}/{}", i + 1, sched.len()));
+                d.next(i);
             }
+            d.seed
         };
 
         progress("Decoding image...".to_string());

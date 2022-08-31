@@ -45,6 +45,16 @@ impl<'a> DdimSampler<'a> {
         }
     }
 
+    pub fn add_noise(
+        t: &DiffusionScheduleParam,
+        seed: &ndarray::ArrayD<f32>,
+        noise: &ndarray::ArrayD<f32>,
+    ) -> ndarray::ArrayD<f32> {
+        let sqrt_alphas_cumprod = t.alpha_cumprod.sqrt() as f32;
+        let sqrt_one_minus_alphas_cumprod = (1.0 - t.alpha_cumprod).sqrt() as f32;
+        noise * sqrt_one_minus_alphas_cumprod + seed * sqrt_alphas_cumprod
+    }
+
     pub fn next(&mut self, i: usize) {
         let t = &self.steps[i];
         let batch = self.seed.shape()[0];
@@ -167,6 +177,15 @@ impl<'a> LmsSampler<'a> {
 
     fn sigma(t: &DiffusionScheduleParam) -> f32 {
         ((1. - t.alpha_cumprod) / t.alpha_cumprod).sqrt() as f32
+    }
+
+    pub fn add_noise(
+        t: &DiffusionScheduleParam,
+        seed: &ndarray::ArrayD<f32>,
+        noise: &ndarray::ArrayD<f32>,
+    ) -> ndarray::ArrayD<f32> {
+        let sigma = Self::sigma(t);
+        seed / sigma + noise
     }
 
     pub fn next(&mut self, i: usize) {
