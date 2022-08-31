@@ -16,6 +16,7 @@ const config = {
       fallback: "200.html",
     }),
     trailingSlash: "always",
+    prerender: { entries: [] },
   },
 };
 
