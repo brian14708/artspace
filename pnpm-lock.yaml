@@ -8,7 +8,7 @@ importers:
   app:
     specifiers:
       '@sveltejs/adapter-static': 1.0.0-next.41
-      '@sveltejs/kit': 1.0.0-next.460
+      '@sveltejs/kit': 1.0.0-next.461
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.36.1
@@ -30,7 +30,7 @@ importers:
       vite: 3.1.0-beta.1
     devDependencies:
       '@sveltejs/adapter-static': 1.0.0-next.41
-      '@sveltejs/kit': 1.0.0-next.460_fhgkwirxvgjw2igda6zmhiisma
+      '@sveltejs/kit': 1.0.0-next.461_fhgkwirxvgjw2igda6zmhiisma
       '@tauri-apps/api': 1.0.2
       '@tauri-apps/cli': 1.0.5
       '@typescript-eslint/eslint-plugin': 5.36.1_lbwfnm54o3pmr3ypeqp3btnera
@@ -156,8 +156,8 @@ packages:
     resolution: {integrity: sha512-Bw6MfEuzuqjKZuVCG7ZHXiOIy/LDoRVR278eeAf4kcwl1B8+YEvChqdCvG2N5Ur+rxUIHstPgeX39HezS8d+mw==}
     dev: true
 
-  /@sveltejs/kit/1.0.0-next.460_fhgkwirxvgjw2igda6zmhiisma:
-    resolution: {integrity: sha512-bwDkwzEN72+1K5FXqBQGrYOwyA6V5sSSec/A6qXMTfh4uycFTiIQh/e2ki3pxfG0SwijrUo43FEbdKLyBiuDgQ==}
+  /@sveltejs/kit/1.0.0-next.461_fhgkwirxvgjw2igda6zmhiisma:
+    resolution: {integrity: sha512-REe/ZIjE9F6ndEtCn4oPXpGWjiyLtOVWKJ73q53I3zxxoohL8OG6Zy0tnrdSvQj0nOBFTyQ4QXeYFn4TAO5oSw==}
     engines: {node: '>=16.14'}
     hasBin: true
     requiresBuild: true
