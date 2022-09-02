@@ -25,7 +25,7 @@ clap = { version = "3.2.20", features = ["derive"] }
 ndarray-npy = "0.8.1"
 ndarray = "0.15.6"
 png = "0.17.5"
-tokio = { version = "1.20.1", features = ["full"] }
+tokio = { version = "1.21.0", features = ["full"] }
 anyhow = "1.0.63"
 reqwest = "0.11.11"
 async-std = "1.12.0"
