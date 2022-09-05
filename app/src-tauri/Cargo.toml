@@ -24,7 +24,7 @@ tauri = { version = "1.0.5", features = ["api-all"] }
 clap = { version = "3.2.20", features = ["derive"] }
 ndarray-npy = "0.8.1"
 ndarray = "0.15.6"
-png = "0.17.5"
+png = "0.17.6"
 tokio = { version = "1.21.0", features = ["full"] }
 anyhow = "1.0.64"
 reqwest = "0.11.11"
