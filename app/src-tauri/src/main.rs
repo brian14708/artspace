@@ -115,9 +115,7 @@ fn log(s: impl Into<String>) {
 
 #[tokio::main]
 async fn main() {
-    if cli::exec().await {
-        ort::deinit();
-    } else {
+    if !cli::exec().await {
         #[allow(unused_imports)]
         tauri::Builder::default()
             .invoke_handler(tauri::generate_handler![
