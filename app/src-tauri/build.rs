@@ -9,16 +9,6 @@ fn main() {
     if !cfg!(feature = "custom-protocol") {
         codegen = codegen.dev();
     }
-    let p = codegen.build();
-    // workaround for https://github.com/tauri-apps/tauri/pull/4894
-    {
-        std::fs::write(
-            &p,
-            std::fs::read_to_string(&p)
-                .unwrap()
-                .replace(":: tauri :: Context ::", ":: tauri ::"),
-        )
-        .unwrap();
-    }
+    codegen.build();
     tauri_build::build()
 }
