@@ -2205,18 +2205,19 @@ dependencies = [
 
 [[package]]
 name = "macro_rules_attribute"
-version = "0.0.2"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "641c64af6cd80b81cf9c2f2f6ee382b1050c71ce63e20800499971a4a4195005"
+checksum = "258c86475e1616d6f2d8f5227cfaabd3dae1f6d5388b9597df8a199d4497aba7"
 dependencies = [
  "macro_rules_attribute-proc_macro",
+ "paste",
 ]
 
 [[package]]
 name = "macro_rules_attribute-proc_macro"
-version = "0.0.2"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb246ada5a8c47b8b6e90c9f9a0f84f294939cdf558f1bc8d17fbb30f9706598"
+checksum = "f26a8d2502d5aa4d411ef494ba7470eb299f05725179ce3b5de77aa01a9ffdea"
 
 [[package]]
 name = "malloc_buf"
@@ -4421,9 +4422,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokenizers"
-version = "0.11.3"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60c79b46b9e4a7c8a4926531d1b81521a976cab19f1651627385504aa68799f2"
+checksum = "72e10b4dcec4f6239730ce03b3c790f6d9ce1559bb5b263b9455436cdbea5b22"
 dependencies = [
  "aho-corasick",
  "cached-path",
@@ -4431,6 +4432,7 @@ dependencies = [
  "derive_builder",
  "dirs",
  "esaxx-rs",
+ "getrandom 0.2.7",
  "indicatif 0.15.0",
  "itertools 0.9.0",
  "lazy_static",
@@ -4438,7 +4440,7 @@ dependencies = [
  "macro_rules_attribute",
  "onig",
  "paste",
- "rand 0.7.3",
+ "rand 0.8.5",
  "rayon",
  "rayon-cond",
  "regex",
@@ -4447,6 +4449,7 @@ dependencies = [
  "serde",
  "serde_json",
  "spm_precompiled",
+ "thiserror",
  "unicode-normalization-alignments",
  "unicode-segmentation",
  "unicode_categories",
