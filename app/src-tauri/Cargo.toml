@@ -19,7 +19,7 @@ tauri-build = { version = "1.1.1", features = ["codegen"] }
 [dependencies]
 artspace-core = { path = "../../core" }
 serde_json = "1.0.85"
-serde = { version = "1.0.144", features = ["derive"] }
+serde = { version = "1.0.145", features = ["derive"] }
 tauri = { version = "1.1.1", features = ["api-all"] }
 clap = { version = "3.2.22", features = ["derive"] }
 ndarray-npy = "0.8.1"
