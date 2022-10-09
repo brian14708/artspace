@@ -16,5 +16,5 @@ smallvec = "1.10.0"
 thiserror = "1.0.37"
 tokenizers = "0.13.1"
 tsar-rs = { git = "https://github.com/brian14708/tsar", version = "0.1.0" }
-nalgebra = "0.31.1"
+nalgebra = "0.31.2"
 quad-rs = "0.1.2"
