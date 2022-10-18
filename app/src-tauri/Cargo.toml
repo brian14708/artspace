@@ -21,7 +21,7 @@ artspace-core = { path = "../../core" }
 serde_json = "1.0.86"
 serde = { version = "1.0.145", features = ["derive"] }
 tauri = { version = "1.1.1", features = ["api-all"] }
-clap = { version = "4.0.15", features = ["derive"] }
+clap = { version = "4.0.16", features = ["derive"] }
 ndarray-npy = "0.8.1"
 ndarray = "0.15.6"
 png = "0.17.6"
