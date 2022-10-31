@@ -7,7 +7,7 @@ importers:
 
   app:
     specifiers:
-      '@sveltejs/adapter-static': 1.0.0-next.46
+      '@sveltejs/adapter-static': 1.0.0-next.47
       '@sveltejs/kit': 1.0.0-next.528
       '@tauri-apps/api': 1.1.0
       '@tauri-apps/cli': 1.1.1
@@ -29,7 +29,7 @@ importers:
       typescript: 4.8.4
       vite: 3.2.1
     devDependencies:
-      '@sveltejs/adapter-static': 1.0.0-next.46
+      '@sveltejs/adapter-static': 1.0.0-next.47
       '@sveltejs/kit': 1.0.0-next.528_svelte@3.52.0+vite@3.2.1
       '@tauri-apps/api': 1.1.0
       '@tauri-apps/cli': 1.1.1
@@ -149,8 +149,8 @@ packages:
     resolution: {integrity: sha512-a5Sab1C4/icpTZVzZc5Ghpz88yQtGOyNqYXcZgOssB2uuAr+wF/MvN6bgtW32q7HHrvBki+BsZ0OuNv6EV3K9g==}
     dev: true
 
-  /@sveltejs/adapter-static/1.0.0-next.46:
-    resolution: {integrity: sha512-8BlgwD3fjAbtUUgvREjrq5okZSXMTU/Qla99RhTqGaFo+uOrUzguKrXvjeaD4GzxQZdQUNyTX9hKT0V7tX6TMw==}
+  /@sveltejs/adapter-static/1.0.0-next.47:
+    resolution: {integrity: sha512-pYY9/FhJAIWB3BXnLoKXj5yMZjQjtD9ZsW8UOqKE51H5sbCNHu+wdBlh2CkW20ww4yhfYrlvLWioxij6DPRO9w==}
     dev: true
 
   /@sveltejs/kit/1.0.0-next.528_svelte@3.52.0+vite@3.2.1:
