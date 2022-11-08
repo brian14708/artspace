@@ -14,13 +14,13 @@ name = "artspace-app"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "1.1.1", features = ["codegen"] }
+tauri-build = { version = "1.2.0", features = ["codegen"] }
 
 [dependencies]
 artspace-core = { path = "../../core" }
 serde_json = "1.0.87"
 serde = { version = "1.0.147", features = ["derive"] }
-tauri = { version = "1.1.1", features = ["api-all"] }
+tauri = { version = "1.2.0", features = ["api-all"] }
 clap = { version = "4.0.22", features = ["derive"] }
 ndarray-npy = "0.8.1"
 ndarray = "0.15.6"
