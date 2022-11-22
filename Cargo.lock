@@ -93,7 +93,6 @@ name = "artspace-core"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
- "nalgebra 0.31.4",
  "ndarray",
  "ndarray-rand",
  "ort-sys",
@@ -2388,22 +2387,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nalgebra"
-version = "0.31.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20bd243ab3dbb395b39ee730402d2e5405e448c75133ec49cc977762c4cba3d1"
-dependencies = [
- "approx",
- "matrixmultiply",
- "nalgebra-macros",
- "num-complex",
- "num-rational",
- "num-traits",
- "simba",
- "typenum",
-]
-
-[[package]]
 name = "nalgebra-macros"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2547,7 +2530,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4447657cd40e3107416ec4f2ac3e61a18781b00061789e3b8f4bbcbccb26c4c6"
 dependencies = [
  "image",
- "nalgebra 0.30.1",
+ "nalgebra",
  "ndarray",
 ]
 
@@ -3281,7 +3264,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c133e60521ee477d2f980773a294dd478484469c28b7249e0ef5b29576f3c2f"
 dependencies = [
  "approx",
- "nalgebra 0.30.1",
+ "nalgebra",
  "num-complex",
  "num-traits",
  "ordered-float",

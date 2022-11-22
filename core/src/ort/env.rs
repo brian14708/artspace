@@ -136,6 +136,6 @@ pub fn list_providers() -> Result<Vec<String>> {
 mod tests {
     #[test]
     fn test_version() {
-        assert_eq!(super::version(), "1.12.1");
+        assert_eq!(super::version(), "1.13.1");
     }
 }

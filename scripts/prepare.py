@@ -68,7 +68,7 @@ def host_target():
     assert False, "cannot determine host target"
 
 
-def onnxruntime_download_url(target, version="1.12.1"):
+def onnxruntime_download_url(target, version="1.13.1"):
     assert target != None
     target = target.split("-")
     os_name = target[2]
