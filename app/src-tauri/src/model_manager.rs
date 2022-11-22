@@ -39,8 +39,8 @@ impl ModelManager {
         let sha256 = self
             .manifest
             .models
-            .iter()
-            .map(|(_, m)| m.sha256.clone())
+            .values()
+            .map(|m| m.sha256.clone())
             .collect::<HashSet<_>>();
 
         let mut to_delete = Vec::new();
@@ -167,7 +167,7 @@ impl ModelManager {
 fn ensure_dir(outpath: &Path) -> std::io::Result<()> {
     if let Some(p) = outpath.parent() {
         if !p.exists() {
-            std::fs::create_dir_all(&p)?;
+            std::fs::create_dir_all(p)?;
         }
     }
     Ok(())

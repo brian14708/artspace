@@ -31,7 +31,7 @@ fn main() {
                 .shared_flag(true)
                 .get_compiler();
             let mut t = t.to_command();
-            t.args(&[stub_src, "-o", stublib.display().to_string().as_str()]);
+            t.args([stub_src, "-o", stublib.display().to_string().as_str()]);
             if !t.status().unwrap().success() {
                 panic!("fail to build");
             }

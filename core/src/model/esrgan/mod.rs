@@ -25,7 +25,7 @@ impl SuperResolution for Esrgan {
         run.set_input("input", x)?;
         let out = run.exec(true)?;
         let out = out.get_output_idx::<f32, ndarray::Ix4>(0)?;
-        let out = out.mapv(|v| f32::min(f32::max(v, 0.0), 1.0));
+        let out = out.mapv(|v| v.clamp(0.0, 1.0));
         Ok(out.into_dyn().to_owned())
     }
 }

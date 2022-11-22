@@ -284,7 +284,7 @@ impl Session {
             let mut dims = 0;
             ort_call!(api.GetDimensionsCount, tensor_shape, &mut dims)?;
 
-            let mut shape: SmallVec<[i64; 4]> = smallvec![0; dims as usize];
+            let mut shape: SmallVec<[i64; 4]> = smallvec![0; dims];
             ort_call!(
                 api.GetDimensions,
                 tensor_shape,
@@ -491,7 +491,7 @@ impl<'s> SessionRunResult<'s> {
         let mut dims = 0;
         ort_call!(api.GetDimensionsCount, info, &mut dims)?;
         if let Some(d) = D::NDIM {
-            if (dims as usize) != d {
+            if dims != d {
                 return Err(Error::InvalidInput(format!(
                     "invalid output dimension for {}",
                     idx,
@@ -500,7 +500,7 @@ impl<'s> SessionRunResult<'s> {
         }
 
         let mut shape: SmallVec<[i64; 4]> = SmallVec::new();
-        shape.resize(dims as usize, 0);
+        shape.resize(dims, 0);
         ort_call!(api.GetDimensions, info, shape.as_mut_ptr() as *mut _, dims)?;
 
         let mut ty = sys::ONNXTensorElementDataType_ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED;
