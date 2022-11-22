@@ -40,6 +40,7 @@
     </div>
     <div class="flex justify-around items-center mx-3">
       {#each RATIOS as [w, h], i}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
         <div
           class={"bg-zinc-200 border-4 rounded-lg " +
             (selected === i
