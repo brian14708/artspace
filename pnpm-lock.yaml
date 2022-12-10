@@ -7,7 +7,7 @@ importers:
 
   app:
     specifiers:
-      '@sveltejs/adapter-static': 1.0.0-next.48
+      '@sveltejs/adapter-static': 1.0.0-next.49
       '@sveltejs/kit': 1.0.0-next.581
       '@tauri-apps/api': 1.2.0
       '@tauri-apps/cli': 1.2.2
@@ -29,7 +29,7 @@ importers:
       typescript: 4.9.4
       vite: 4.0.0
     devDependencies:
-      '@sveltejs/adapter-static': 1.0.0-next.48
+      '@sveltejs/adapter-static': 1.0.0-next.49
       '@sveltejs/kit': 1.0.0-next.581_svelte@3.54.0+vite@4.0.0
       '@tauri-apps/api': 1.2.0
       '@tauri-apps/cli': 1.2.2
@@ -329,8 +329,8 @@ packages:
     resolution: {integrity: sha512-a5Sab1C4/icpTZVzZc5Ghpz88yQtGOyNqYXcZgOssB2uuAr+wF/MvN6bgtW32q7HHrvBki+BsZ0OuNv6EV3K9g==}
     dev: true
 
-  /@sveltejs/adapter-static/1.0.0-next.48:
-    resolution: {integrity: sha512-Z5Z+QZOav6D0KDeU3ReksGERJg/sX1k5OKWWXyQ11OwGErEEwSXHYRUyjaBmZEPeGzpVVGwwMUK8YWJlG/MKeA==}
+  /@sveltejs/adapter-static/1.0.0-next.49:
+    resolution: {integrity: sha512-tPMnqzFpFDWbeRsSkTUUIvjSHv66uEilQvk9shupsVRDycBb7ZACEnfA/T1HyEZKaMZYfFafyKb2dCTDGks0nA==}
     dev: true
 
   /@sveltejs/kit/1.0.0-next.581_svelte@3.54.0+vite@4.0.0:
@@ -417,6 +417,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -426,6 +427,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -435,6 +437,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -444,6 +447,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
